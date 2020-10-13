@@ -1,0 +1,25 @@
+{
+    "name": "jfxy/elasticsearch-query-builder",
+    "description": "a query builder package for elasticsearch",
+    "type": "library",
+    "keywords": [
+        "elasticsearch","php"
+    ],
+    "require": {
+        "php": "^7.1"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "yjj",
+            "email": "651069242@qq.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Jfxy\\ElasticSearch\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
