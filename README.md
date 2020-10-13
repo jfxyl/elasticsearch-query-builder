@@ -155,7 +155,7 @@ composer require jfxy/elasticsearch-query-builder
 ```
 
 #### aggs   聚合
-* aggs方法支持terms、histogram、date_histogram、date_range、range、cardinality、avg、sum、min、max、extended_stats等需要传入字段名称的聚合
+* aggs方法支持terms、histogram、date_histogram、date_range、range、cardinality、avg、sum、min、max、stats,extended_stats等需要传入字段名称的聚合
 * $appendParams参数可根据不同聚合类型查询es相关语法进行设置，一般规则是传入和field同级的键值对数组
 ```php
     public function aggs(string $field,string $type = 'terms',array $appendParams = [], ... $subGroups) :self
@@ -244,13 +244,20 @@ composer require jfxy/elasticsearch-query-builder
     ->max('media_CI')
 ````
 
+* stats方法是aggs的stats类型聚合的封装
+````php
+    public function stats(string $field,array $appendParams = []) :self
+    
+    ->stats('media_CI')
+````
+
 * extendedStats方法是aggs的extended_stats类型聚合的封装
 ````php
     public function extendedStats(string $field,array $appendParams = []) :self
     
     ->extendedStats('media_CI')
 ````
-
+---
 * topHits方法是top_hits类型聚合的封装，只能在聚合内使用，获取每个分组内的记录
 ```php
     public function topHits(array $appendParams = []) :self

@@ -638,6 +638,16 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
+    public function stats(string $field,array $appendParams = []) :self
+    {
+        return $this->aggs($field,'stats',$appendParams);
+    }
+
+    /**
+     * @param string $field
+     * @param array $appendParams
+     * @return $this
+     */
     public function extendedStats(string $field,array $appendParams = []) :self
     {
         return $this->aggs($field,'extended_stats',$appendParams);
@@ -917,6 +927,7 @@ abstract class Builder
                     case 'max':
                         $item = $aggsResponse[$key]['value'];
                         break;
+                    case 'stats':
                     case 'extended_stats':
                         $item = $aggsResponse[$key];
                         break;
