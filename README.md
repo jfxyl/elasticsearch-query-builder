@@ -183,6 +183,19 @@ composer require jfxy/elasticsearch-query-builder
             ["key"=>"1000-∞","from"=>"1000"],
         ]
     ])
+    
+    // 支持嵌套聚合
+    ->aggs('platform','terms',['size'=>20],function(Es $query){
+        $query->aggs('news_posttime','date_histogram',[
+            'interval' => 'day',
+            'format' => 'yyyy-MM-dd',
+            'min_doc_count' => 0
+        ],function(Es $query){
+            $query->aggs('media_CI','max');
+        });
+    },function(Es $query){
+        $query->aggs('news_content_field');
+    })
 ```
 
 * groupBy方法是aggs的terms类型聚合的封装  
