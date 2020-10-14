@@ -37,7 +37,7 @@ composer require jfxy/elasticsearch-query-builder
     ->where('news_postdate','>=','2020-09-01')
     ->where(['id' => 1,'status' => [0,1],['news_postdate','>=','2020-09-01'])   // 数字键名条件跟上面顺序一致即可
     ->where(function($query){
-        return $query->where('id',1)->where('status','>',0);
+        $query->where('id',1)->where('status','>',0);
     })
 ```
 
