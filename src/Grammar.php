@@ -47,7 +47,7 @@ class Grammar
         return $builder->fields;
     }
 
-    public function compileWheres($builder) :array
+    public function compileWheres($builder,$not = false) :array
     {
         if(empty($builder->wheres)){
             return ["match_all" => new \stdClass()];
@@ -59,7 +59,7 @@ class Grammar
             $must = [];
             foreach($wheres as $where){
                 if($where['type'] === 'Nested'){
-                    $must[] = $this->compileWheres($where['query']);
+                    $must[] = $this->compileWheres($where['query'],$where['not']);
                 }else{
                     $must[] = $this->whereMatch($where);
                 }
@@ -77,6 +77,13 @@ class Grammar
                 }
             }
         }
+        if($not){
+            $bool = [
+                'bool' => [
+                    'must_not' => $bool
+                ]
+            ];
+        }
         return $bool;
     }
 
@@ -84,22 +91,19 @@ class Grammar
     {
         $aggs = [];
         foreach($builder->aggs as $agg){
+            $params = $agg['params'];
             if($agg['type'] == 'top_hits'){
-                $params = $agg['appendParams'];
                 foreach($this->tophitsComponents as $k => $v){
                     if(!is_null($builder->$v)){
                         $method = 'compile' . ucfirst($v);
                         $params[$k] = $this->$method($builder);
                     }
                 }
-            }elseif($agg['type'] == 'filter'){
-                $params = $this->compileWheres($agg['wheres']);
-            }else{
-                $params = array_merge(['field' => $agg['field']],$agg['appendParams']);
             }
-            $aggs[$agg['alias']] = [
-                $agg['type'] => $params
-            ];
+            if($agg['params'] instanceof Builder){
+                $params = $this->compileWheres($agg['params']);
+            }
+            $aggs[$agg['alias']] = [$agg['type'] => $params];
             if(!empty($agg['subGroups'])){
                 $aggs[$agg['alias']]['aggs'] = [];
                 foreach($agg['subGroups'] as $subGroup){
@@ -165,7 +169,7 @@ class Grammar
         $term = [];
         switch ($where['type']) {
             case 'basic':
-                $term = [$where['match'] => [$where['field'] => $where['value']]];
+                $term = ['term' => [$where['field'] => $where['value']]];
                 break;
             case 'match':
             case 'match_phrase':
@@ -226,13 +230,13 @@ class Grammar
             return $where['boolean'];
         },$wheres),'or');
         $initIndex = $lastIndex = 0;
-        $group = [];
+        $groups = [];
         foreach($orIndex as $index){
             $items = array_slice($wheres,$initIndex,$index - $initIndex);
-            if($items) $group[] = $items;
+            if($items) $groups[] = $items;
             $initIndex = $lastIndex = $index;
         }
-        $group[] = array_slice($wheres, $lastIndex);
-        return $group;
+        $groups[] = array_slice($wheres, $lastIndex);
+        return $groups;
     }
 }

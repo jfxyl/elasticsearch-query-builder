@@ -1,5 +1,5 @@
 <?php
-namespace Jfxy\ElasticSearch;
+namespace Jfxyl\ElasticSearch;
 
 use Closure;
 use Exception;
@@ -77,7 +77,7 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function where($field, $operator = null, $value = null, $match = 'term', $boolean = 'and',$not = false) :self
+    public function where($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
     {
         if (is_array($field)) {
             return $this->addArrayOfWheres($field, $boolean, $not);
@@ -91,27 +91,23 @@ abstract class Builder
             $value, $operator, func_num_args() === 2
         );
 
+        if(in_array($operator,['!=','<>'])){
+            $not = !$not;
+        }
+
         if(is_array($value)){
-            if($operator == '='){
-                return $this->whereIn($field, $value, $boolean, false);
-            } elseif (in_array($operator,['!=','<>'])){
-                return $this->whereNotIn($field, $value, $boolean, false);
-            }
+            return $this->whereIn($field, $value, $boolean, $not);
         }
 
         if(in_array($operator,['>','<','>=','<='])){
             $value = [$operator => $value];
-            return $this->whereBetween($field, $value, $boolean, false);
-        }
-
-        if(in_array($operator,['!=','<>'])){
-            $not = true;
+            return $this->whereBetween($field, $value, $boolean, $not);
         }
 
         $type = 'basic';
 
         $this->wheres[] = compact(
-            'type', 'field', 'operator', 'value', 'match', 'boolean', 'not'
+            'type', 'field', 'operator', 'value', 'boolean', 'not'
         );
         return $this;
     }
@@ -128,7 +124,7 @@ abstract class Builder
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
-        return $this->where($field,$operator,$value,'term','or');
+        return $this->where($field, $operator, $value,'or');
     }
 
 
@@ -138,12 +134,15 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function whereNot($field, $value = null) :self
+    public function whereNot($field, $operator = null, $value = null) :self
     {
-        if($field instanceof Closure){
-            throw new Exception('参数错误');
+        if ($field instanceof Closure && is_null($operator)) {
+            return $this->whereNested($field, 'and', true);
         }
-        return $this->where($field, null, $value,'term','and',true);
+        [$value, $operator] = $this->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+        return $this->where($field, $operator, $value,'and',true);
     }
 
     /**
@@ -152,12 +151,15 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function orWhereNot($field, $value = null) :self
+    public function orWhereNot($field, $operator = null, $value = null) :self
     {
-        if($field instanceof Closure){
-            throw new Exception('参数错误');
+        if ($field instanceof Closure && is_null($operator)) {
+            return $this->whereNested($field, 'or', true);
         }
-        return $this->where($field, null, $value,'term','or',true);
+        [$value, $operator] = $this->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+        return $this->where($field, $operator, $value,'or',true);
     }
 
 
@@ -527,13 +529,12 @@ abstract class Builder
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function aggs(string $field,string $type = 'terms',array $appendParams = [], ... $subGroups) :self
+    public function aggs(string $alias,string $type = 'terms',$params = [], ... $subGroups) :self
     {
         $aggs = [
-            'field' => $field,
             'type' => $type,
-            'alias' => $field.'_'.$type,
-            'appendParams' => $appendParams,
+            'alias' => $alias,
+            'params' => $params,
         ];
         foreach($subGroups as $subGroup){
             call_user_func($subGroup,$query = $this->newQuery());
@@ -560,7 +561,9 @@ abstract class Builder
      */
     public function groupBy(string $field, array $appendParams = [], ... $subGroups) :self
     {
-        return $this->aggs($field,'terms',$appendParams, ... $subGroups);
+        $alias = $field.'_terms';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'terms',$params, ... $subGroups);
     }
 
     /**
@@ -574,13 +577,14 @@ abstract class Builder
      */
     public function dateGroupBy(string $field,string $interval = 'day',string $format = "yyyy-MM-dd",array $appendParams = [], ... $subGroups) :self
     {
-        $defaultParams = [
-            "interval" => $interval,
-            "format" => $format,
-            "min_doc_count" => 0,
-        ];
-        $appendParams = array_merge($defaultParams,$appendParams);
-        return $this->aggs($field,'date_histogram',$appendParams, ... $subGroups);
+        $alias = $field.'_date_histogram';
+        $params = array_merge([
+            'field' => $field,
+            'interval' => $interval,
+            'format' => $format,
+            'min_doc_count' => 0,
+        ],$appendParams);
+        return $this->aggs($alias,'date_histogram',$params, ... $subGroups);
     }
 
     /**
@@ -590,7 +594,9 @@ abstract class Builder
      */
     public function cardinality(string $field,array $appendParams = []) :self
     {
-        return $this->aggs($field,'cardinality',$appendParams);
+        $alias = $field.'_cardinality';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'cardinality',$params);
     }
 
     /**
@@ -600,7 +606,9 @@ abstract class Builder
      */
     public function avg(string $field,array $appendParams = []) :self
     {
-        return $this->aggs($field,'avg',$appendParams);
+        $alias = $field.'_avg';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'avg',$params);
     }
 
     /**
@@ -610,7 +618,9 @@ abstract class Builder
      */
     public function sum(string $field,array $appendParams = []) :self
     {
-        return $this->aggs($field,'sum',$appendParams);
+        $alias = $field.'_sum';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'sum',$params);
     }
 
     /**
@@ -620,7 +630,9 @@ abstract class Builder
      */
     public function min(string $field,array $appendParams = []) :self
     {
-        return $this->aggs($field,'min',$appendParams);
+        $alias = $field.'_min';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'min',$params);
     }
 
     /**
@@ -630,7 +642,9 @@ abstract class Builder
      */
     public function max(string $field,array $appendParams = []) :self
     {
-        return $this->aggs($field,'max',$appendParams);
+        $alias = $field.'_max';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'max',$params);
     }
 
     /**
@@ -640,7 +654,9 @@ abstract class Builder
      */
     public function stats(string $field,array $appendParams = []) :self
     {
-        return $this->aggs($field,'stats',$appendParams);
+        $alias = $field.'_stats';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'stats',$params);
     }
 
     /**
@@ -650,7 +666,9 @@ abstract class Builder
      */
     public function extendedStats(string $field,array $appendParams = []) :self
     {
-        return $this->aggs($field,'extended_stats',$appendParams);
+        $alias = $field.'_extended_stats';
+        $params = array_merge(['field' => $field],$appendParams);
+        return $this->aggs($alias,'extended_stats',$params);
     }
 
     /**
@@ -664,15 +682,9 @@ abstract class Builder
      * ]
      * @return $this
      */
-    public function topHits(array $appendParams = []) :self
+    public function topHits(array $params = []) :self
     {
-        $aggs = [
-            'type' => 'top_hits',
-            'alias' => 'top_hits',
-            'appendParams' => $appendParams,
-        ];
-        $this->aggs[] = $aggs;
-        return $this;
+        return $this->aggs('top_hits','top_hits',$params);
     }
 
     /**
@@ -684,17 +696,7 @@ abstract class Builder
      */
     public function aggsFilter(string $alias,$wheres,... $subGroups) :self
     {
-        $aggs = [
-            'type' => 'filter',
-            'alias' => $alias,
-            'wheres' => $this->newQuery()->where($wheres)
-        ];
-        foreach($subGroups as $subGroup){
-            call_user_func($subGroup,$query = $this->newQuery());
-            $aggs['subGroups'][] = $query;
-        }
-        $this->aggs[] = $aggs;
-        return $this;
+        return $this->aggs($alias,'filter',$this->newQuery()->where($wheres), ... $subGroups);
     }
 
     /**
@@ -735,27 +737,31 @@ abstract class Builder
         if($directReturn){
             return $this->response;
         }
-        $list = array_map(function($hit){
-            return array_merge([
-                '_index' => $hit['_index'],
-                '_type' => $hit['_type'],
-                '_id' => $hit['_id'],
-                '_score' => $hit['_score']
-            ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []);
-        },$this->response['hits']['hits']);
+        try{
+            $list = array_map(function($hit){
+                return array_merge([
+                    '_index' => $hit['_index'],
+                    '_type' => $hit['_type'],
+                    '_id' => $hit['_id'],
+                    '_score' => $hit['_score']
+                ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []);
+            },$this->response['hits']['hits']);
 
-        $data = [
-            'total' => $this->response['hits']['total'],
-            'list' => $list
-        ];
-        if(isset($this->response['aggregations'])){
-            $data['aggs'] = $this->response['aggregations'];
-//            $data['aggs'] = $this->handleAgg($this,$this->response['aggregations']);
+            $data = [
+                'total' => $this->response['hits']['total'],
+                'list' => $list
+            ];
+            if(isset($this->response['aggregations'])){
+                $data['aggs'] = $this->response['aggregations'];
+                //$data['aggs'] = $this->handleAgg($this,$this->response['aggregations']);
+            }
+            if(isset($this->response['_scroll_id'])){
+                $data['scroll_id'] = $this->response['_scroll_id'];
+            }
+            return $data;
+        }catch(\Exception $e){
+            throw $e;
         }
-        if(isset($this->response['_scroll_id'])){
-            $data['scroll_id'] = $this->response['_scroll_id'];
-        }
-        return $data;
     }
 
     /**
@@ -879,7 +885,7 @@ abstract class Builder
     }
 
     /**
-     * 聚合结果处理
+     * 聚合结果处理(搁置)
      * 暂时仅支持对【terms,histogram,date_histogram,filter,cardinality,avg,sum,min,max,extended_stats,top_hits】
      * 如需拓展请在子类中重写此方法
      * @param Builder $builder
@@ -969,15 +975,21 @@ abstract class Builder
         }
     }
 
-    protected function addArrayOfWheres($field, $boolean, $not, $method = 'where')
+    protected function addArrayOfWheres($field, $boolean, $not)
     {
-        return $this->whereNested(function ($query) use ($field, $method, $boolean, $not) {
+        return $this->whereNested(function ($query) use ($field, $boolean, $not) {
             foreach ($field as $key => $value) {
                 if (is_numeric($key) && is_array($value)) {
-                    $query->{$method}(...array_values($value));
+                    $value = array_values($value);
+                    [$value[2], $value[1]] = $this->prepareValueAndOperator(
+                        @$value[2], @$value[1], count($value) === 2
+                    );
+                    $params = array_pad($value,5,null);
+                    $params[3] = $boolean;
+                    $params[4] = $not;
+                    $query->where(...$params);
                 } else {
-                    $matchType = is_array($value) ? 'terms' : 'term';
-                    $query->$method($key, '=', $value, $matchType, $boolean, $not);
+                    $query->where($key, '=', $value, $boolean, $not);
                 }
             }
         }, $boolean);
@@ -1000,13 +1012,10 @@ abstract class Builder
             return [$operator, '='];
         } elseif (is_null($value) && in_array($operator, $this->operators)) {
             throw new Exception('非法运算符和值组合');
+        } elseif (is_array($value) && !in_array($operator, ['=','!=','<>'])) {
+            throw new Exception('非法运算符和值组合');
         }
         return [$value, $operator];
-    }
-
-    protected function invalidOperator($operator)
-    {
-        return !in_array(strtolower($operator), $this->operators, true);
     }
 
     protected function addNestedWhereQuery($query, $boolean = 'and', $not = false)

@@ -16,37 +16,56 @@ composer require jfxy/elasticsearch-query-builder
 ## 方法
 #### select
 ```php
-    public function select($fields) :self
+    public function select($columns) :self
     
     ->select('id','name')
     ->select(['id','name'])
 ```
 
 #### where
-* where闭包用法类似mysql中对条件前后加上()，whereNot、orWhereNot不支持闭包用法
+* where、orWhere闭包用法类似mysql中对条件前后加上()，在封装业务代码存在or关系时，应使用闭包包裹内部条件
 * 比较运算符支持 **=,>,>=,<,<=,!=,<>**
+* whereNot、orWhereNot方法在实现or和and条件时需要注意传参
 ```php
-    public function where($field, $operator = null, $value = null, $match = 'term', $boolean = 'and',$not = false) :self
-    public function orWhere($field, $operator = null, $value = null) :self
-    public function whereNot($field, $value = null) :self
-    public function orWhereNot($field, $value = null) :self
+    public function where($column, $operator = null, $value = null, $match = 'term', $boolean = 'and',$not = false) :self
+    public function orWhere($column, $operator = null, $value = null) :self
+    public function whereNot($column, $value = null) :self
+    public function orWhereNot($column, $value = null) :self
     
     ->where('id',1)
     ->where('id','=',1)
-    ->where('id',[1,2])
+    ->where('id',[1,2])        等同于         ->whereIn('id',[1,2])
     ->where('news_postdate','>=','2020-09-01')
-    ->where(['id' => 1,'status' => [0,1],['news_postdate','>=','2020-09-01'])   // 数字键名条件跟上面顺序一致即可
+    
+    // 闭包用法
     ->where(function($query){
-        $query->where('id',1)->where('status','>',0);
+        return $query->where('id',1)->orWhere('status','>',0);
     })
+    
+    // 数组用法，下面两种写法类似，数组用法下的time条件顺序跟直接传入where方法顺序一致即可
+    ->where(['id' => 1,'status' => [0,1],['time','>=','2020-09-01']])
+    ->where(function($query){
+        $query->where('id',1)->where('status',[0,1])->where('time','>=','2020-09-01');
+    })
+    
+    // whereNot实现 a != 1 or b != 2
+    ->whereNot('a',1)->whereNot('b',2)
+    ->whereNot(['a'=>1,'b'=>2])
+    
+    // whereNot实现 a != 1 and b != 2，需要用whereNot闭包方式调用
+    ->whereNot(function($query){
+        $query->where('a',1)->where('b',2);
+    })
+    
+    
 ```
 
 #### in
 ```php
-    public function whereIn($field, array $value, $boolean = 'and', $not = false) :self
-    public function whereNotIn($field, array $value, $boolean = 'and') :self
-    public function orWhereIn($field, array $value) :self
-    public function orWhereNotIn($field, array $value) :self
+    public function whereIn($column, array $value, $boolean = 'and', $not = false) :self
+    public function whereNotIn($column, array $value, $boolean = 'and') :self
+    public function orWhereIn($column, array $value) :self
+    public function orWhereNotIn($column, array $value) :self
     
     ->whereIn('id',[1,2])
 ```
@@ -54,10 +73,10 @@ composer require jfxy/elasticsearch-query-builder
 #### between
 * 默认为闭区间，比较运算符支持 **>,>=,<,<=**
 ```php
-    public function whereBetween($field, array $value, $boolean = 'and', $not = false) :self
-    public function whereNotBetween($field, array $value, $boolean = 'and') :self
-    public function orWhereBetween($field, array $value) :self
-    public function orWhereNotBetween($field, array $value) :self
+    public function whereBetween($column, array $value, $boolean = 'and', $not = false) :self
+    public function whereNotBetween($column, array $value, $boolean = 'and') :self
+    public function orWhereBetween($column, array $value) :self
+    public function orWhereNotBetween($column, array $value) :self
     
     ->whereBetween('id',[1,10])
     ->whereBetween('id',[1,'<' => 10])
@@ -67,10 +86,10 @@ composer require jfxy/elasticsearch-query-builder
 #### exists
 * 字段不存在或为null
 ```php
-    public function whereExists($field,$boolean = 'and', $not = false) :self
-    public function whereNotExists($field) :self
-    public function orWhereExists($field) :self
-    public function orWhereNotExists($field) :self
+    public function whereExists($column,$boolean = 'and', $not = false) :self
+    public function whereNotExists($column) :self
+    public function orWhereExists($column) :self
+    public function orWhereNotExists($column) :self
     
     ->whereExists('news_uuid')
 ```
@@ -80,15 +99,15 @@ composer require jfxy/elasticsearch-query-builder
 * whereMultiMatch方法，$type=best_fields、most_fields、cross_fields、phrase、phrase_prefix
 ```php
     // 单字段
-    public function whereMatch($field, $value = null,$type = 'match',array $appendParams = [], $boolean = 'and', $not = false) :self
-    public function orWhereMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
-    public function whereNotMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
-    public function orWhereNotMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
+    public function whereMatch($column, $value = null,$type = 'match',array $appendParams = [], $boolean = 'and', $not = false) :self
+    public function orWhereMatch($column, $value = null,$type = 'match',array $appendParams = []) :self
+    public function whereNotMatch($column, $value = null,$type = 'match',array $appendParams = []) :self
+    public function orWhereNotMatch($column, $value = null,$type = 'match',array $appendParams = []) :self
     // 多字段
-    public function whereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = [], $boolean = 'and', $not = false) :self
-    public function orWhereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
-    public function whereNotMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
-    public function orWhereNotMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function whereMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = [], $boolean = 'and', $not = false) :self
+    public function orWhereMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function whereNotMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function orWhereNotMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = []) :self
     
     ->whereMatch('news_title','上海','match_phrase',['slop'=>1])
     ->whereMultiMatch(['news_title','news_content'],'上海','phrase',["operator" => "OR"])
@@ -113,7 +132,7 @@ composer require jfxy/elasticsearch-query-builder
     public function collapse(string $field,array $appendParams = []) :self
     
     ->collapse('news_sim_hash')
-    ->collapse('news_sim_hash')->aggs('news_sim_hash','cardinality')
+    ->collapse('news_sim_hash')->aggs('alias','cardinality',['field'=>'news_sim_hash'])
     ->collapse('news_sim_hash')->cardinality('news_sim_hash')
     ->collapse('news_sim_hash')->paginator()
 ```
@@ -155,46 +174,41 @@ composer require jfxy/elasticsearch-query-builder
 ```
 
 #### aggs   聚合
-* aggs方法支持terms、histogram、date_histogram、date_range、range、cardinality、avg、sum、min、max、stats、extended_stats等需要传入字段名称的聚合
-* $appendParams参数可根据不同聚合类型查询es相关语法进行设置，一般规则是传入和field同级的键值对数组
+* $alias参数是该聚合的别名
+* $type参数是聚合的类型，terms、histogram、date_histogram、date_range、range、cardinality、avg、sum、min、max、extended_stats、top_hits、filter...
+* $params参数是不同聚合类型下的条件键值对数组
+* ...$subGroups参数是嵌套聚合，通过传递闭包参数调用，可同时传递多个闭包
 ```php
-    public function aggs(string $field,string $type = 'terms',array $appendParams = [], ... $subGroups) :self
+    public function aggs(string $alias,string $type = 'terms',$params = [], ... $subGroups) :self
     
-    ->aggs('platform','terms',['size'=>15,'order' => ['_count'=>'asc']])
-    ->aggs('news_posttime','date_histogram',['interval' => 'day','format' => 'yyyy-MM-dd','min_doc_count' => 0])
-    ->aggs('news_like_count','histogram',['interval'=>10])
-    ->aggs('news_like_count','extended_stats')
-    ->aggs('news_sim_hash','cardinality')
-    ->aggs('news_like_count','avg')
-    ->aggs('news_like_count','sum')
-    ->aggs('news_like_count','min')
-    ->aggs('news_like_count','max')
-    ->aggs('news_posttime','date_range',[
-        "format"=> "yyyy-MM-dd",
-        "ranges"=>[
-            ["from"=>"2020-09-01","to"=>"2020-09-02"],
-            ["from"=>"2020-09-02","to"=>"2020-09-03"]
+    ->aggs('alias','terms',['field'=>'platform','size'=>15,'order' => ['_count'=>'asc']])
+    ->aggs('alias','date_histogram',['field'=>'news_posttime','interval' => 'day','format' => 'yyyy-MM-dd','min_doc_count' => 0])
+    ->aggs('alias','histogram',['field'=>'news_like_count','interval'=>10])
+    ->aggs('alias','extended_stats',['field'=>'news_like_count'])
+    ->aggs('alias','cardinality',['field'=>'news_sim_hash'])
+    ->aggs('alias','avg',['field'=>'news_like_count'])
+    ->aggs('alias','sum',['field'=>'news_like_count'])
+    ->aggs('alias','min',['field'=>'news_like_count'])
+    ->aggs('alias','max',['field'=>'news_like_count'])
+    ->aggs('alias','date_range',[
+        'field' => 'news_posttime',
+        'format'=> 'yyyy-MM-dd',
+        'ranges'=>[
+            ['from'=>'2020-09-01','to'=>'2020-09-02'],
+            ['from'=>"2020-09-02",'to'=>'2020-09-03']
         ]
     ])
-    ->aggs('media_CI','range',[
-        "ranges"=>[
-            ["key"=>"0-500","to"=>"500"],
-            ["key"=>"500-1000","from"=>"500","to"=>"1000"],
-            ["key"=>"1000-∞","from"=>"1000"],
+    ->aggs('alias','range',[
+        'field' => 'media_CI',
+        'ranges'=>[
+            ['key'=>'0-500','to'=>'500'],
+            ['key'=>'500-1000','from'=>'500','to'=>'1000'],
+            ['key'=>'1000-∞','from'=>'1000'],
         ]
     ])
-    
-    // 支持嵌套聚合
-    ->aggs('platform','terms',['size'=>20],function(Es $query){
-        $query->aggs('news_posttime','date_histogram',[
-            'interval' => 'day',
-            'format' => 'yyyy-MM-dd',
-            'min_doc_count' => 0
-        ],function(Es $query){
-            $query->aggs('media_CI','max');
-        });
-    },function(Es $query){
-        $query->aggs('news_content_field');
+    ->aggs('alias','top_hits',$params)
+    ->aggs('alias','filter',function(Es $query){
+        $query->where('news_posttime','>','2020-09-01 00:00:00');
     })
 ```
 
@@ -270,7 +284,7 @@ composer require jfxy/elasticsearch-query-builder
     
     ->extendedStats('media_CI')
 ````
----
+
 * topHits方法是top_hits类型聚合的封装，只能在聚合内使用，获取每个分组内的记录
 ```php
     public function topHits(array $appendParams = []) :self
@@ -308,12 +322,12 @@ composer require jfxy/elasticsearch-query-builder
 ```php
     public function aggsFilter($alias,$wheres,... $subGroups) :self
     
-    ->aggsFilter('a1',function(Es $query){
+    ->aggsFilter('alias1',function(Es $query){
         $query->where('platform','web');
     },function(Es $query){
         $query->groupBy('platform_name',['size'=>30]);
     })
-    ->aggsFilter('a2',['platform'=>'web','news_title'=>'合肥',['news_postdate','>=','2020-09-01']],function(Es $query){
+    ->aggsFilter('alias2',['platform'=>'web','news_title'=>'合肥',['news_postdate','>=','2020-09-01']],function(Es $query){
         $query->groupBy('platform_name',['size'=>30]);
     })
 ```
