@@ -1,5 +1,5 @@
 <?php
-namespace Jfxyl\ElasticSearch;
+namespace Jfxy\ElasticSearch;
 
 use Closure;
 use Exception;
