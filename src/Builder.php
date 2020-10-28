@@ -739,12 +739,12 @@ abstract class Builder
         }
         try{
             $list = array_map(function($hit){
-                return array_merge([
+                return $this->decorate(array_merge([
                     '_index' => $hit['_index'],
                     '_type' => $hit['_type'],
                     '_id' => $hit['_id'],
                     '_score' => $hit['_score']
-                ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []);
+                ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
             },$this->response['hits']['hits']);
 
             $data = [
@@ -1025,6 +1025,15 @@ abstract class Builder
             $this->wheres[] = compact('type', 'query', 'boolean','not');
         }
         return $this;
+    }
+
+    /**
+     * @param $item
+     * @return mixed
+     */
+    protected function decorate($item)
+    {
+        return $item;
     }
 
     abstract public function query();
