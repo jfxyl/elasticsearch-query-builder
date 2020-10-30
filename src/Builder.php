@@ -780,7 +780,7 @@ abstract class Builder
 
         if(!empty($this->collapse)){
             $collapseField = is_string($this->collapse) ? $this->collapse : $this->collapse['field'];
-            $this->aggs($collapseField,'cardinality');
+            $this->cardinality($collapseField);
         }
 
         $this->runQuery();
@@ -792,12 +792,12 @@ abstract class Builder
         }
 
         $list = array_map(function($hit){
-            return array_merge([
+            return $this->decorate(array_merge([
                 '_index' => $hit['_index'],
                 '_type' => $hit['_type'],
                 '_id' => $hit['_id'],
                 '_score' => $hit['_score']
-            ],$hit['_source']);
+            ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
         },$this->response['hits']['hits']);
 
         $maxPage = intval(ceil($total / $size));
