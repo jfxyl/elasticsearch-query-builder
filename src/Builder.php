@@ -8,6 +8,8 @@ abstract class Builder
 {
     public $wheres = [];
 
+    public $postWheres = null;
+
     public $fields = null;
 
     public $from = null;
@@ -398,6 +400,24 @@ abstract class Builder
     public function orWhereNotExists($field) :self
     {
         return $this->whereExists($field,'or',true);
+    }
+
+    /**
+     * 后置过滤器
+     * @param $field
+     * @param null $operator
+     * @param null $value
+     * @param string $boolean
+     * @param bool $not
+     * @return Builder
+     * @throws Exception
+     */
+    public function postWhere($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    {
+        $query = $this->newQuery()->where(...func_get_args());
+        $this->postWheres = is_array($this->postWheres) ? $this->postWheres : [];
+        array_push($this->postWheres,...$query->wheres);
+        return $this;
     }
 
     /**

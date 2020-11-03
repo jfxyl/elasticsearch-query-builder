@@ -113,6 +113,19 @@ composer require jfxy/elasticsearch-query-builder
     ->whereMultiMatch(['news_title','news_content'],'上海','phrase',["operator" => "OR"])
 ```
 
+#### postWhere 后置过滤器
+* postWhere方法添加的条件会作用于post_filter查询
+* postWhere方法参数同where方法相同，复杂的检索可以传入数组或闭包
+```php
+    public function postWhere($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    
+    ->postWhere('platform','wx')
+    ->postWhere(['platform' => ['wx','web'],['news_posttime','>','2020-09-01 00:00:00']])
+    ->postWhere(function(Es $query){
+        $query->where('platform','wx')->whereNotMatch('news_title','安徽合肥')->orWhereIn('news_postdate',['2020-09-01','2020-09-02']);
+    })
+```
+
 #### when
 * $value为true时会执行$callback，否则当$default存在时会执行$default
 ```php

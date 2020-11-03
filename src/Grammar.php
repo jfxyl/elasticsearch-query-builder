@@ -11,6 +11,7 @@ class Grammar
         'size' => 'size',
         'sort' => 'orders',
         'query' => 'wheres',
+        'post_filter' => 'postWheres',
         'aggs' => 'aggs',
         'highlight' => 'highlight',
     ];
@@ -53,6 +54,43 @@ class Grammar
             return ["match_all" => new \stdClass()];
         }
         $whereGroups = $this->wherePriorityGroup($builder->wheres);
+        $operation = count($whereGroups) === 1 ? 'must' : 'should';
+        $bool = [];
+        foreach($whereGroups as $wheres){
+            $must = [];
+            foreach($wheres as $where){
+                if($where['type'] === 'Nested'){
+                    $must[] = $this->compileWheres($where['query'],$where['not']);
+                }else{
+                    $must[] = $this->whereMatch($where);
+                }
+            }
+            if (!empty($must)) {
+                $bool['bool'][$operation] = $bool['bool'][$operation] ?? [];
+                if($operation == 'should'){
+                    if(count($must) === 1){
+                        array_push($bool['bool'][$operation],array_shift($must));
+                    }else{
+                        array_push($bool['bool'][$operation],['bool' => ['must' => $must]]);
+                    }
+                }else{
+                    array_push($bool['bool'][$operation],...$must);
+                }
+            }
+        }
+        if($not){
+            $bool = [
+                'bool' => [
+                    'must_not' => $bool
+                ]
+            ];
+        }
+        return $bool;
+    }
+
+    public function compilePostWheres($builder,$not = false) :array
+    {
+        $whereGroups = $this->wherePriorityGroup($builder->postWheres);
         $operation = count($whereGroups) === 1 ? 'must' : 'should';
         $bool = [];
         foreach($whereGroups as $wheres){
