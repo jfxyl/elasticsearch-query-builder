@@ -843,12 +843,12 @@ abstract class Builder
         }
         if(isset($this->response['hits']['hits'][0])){
             $hit = $this->response['hits']['hits'][0];
-            $data = array_merge([
+            $data = $this->decorate(array_merge([
                 '_index' => $hit['_index'],
                 '_type' => $hit['_type'],
                 '_id' => $hit['_id'],
                 '_score' => $hit['_score']
-            ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []);
+            ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
         }
         return @$data;
     }
