@@ -403,6 +403,199 @@ abstract class Builder
     }
 
     /**
+     * @param $field
+     * @param $value
+     * @param $appendParams
+     * @param string $boolean
+     * @param bool $not
+     * @return $this
+     */
+    public function wherePrefix($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    {
+        $type = 'prefix';
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        return $this;
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function whereNotPrefix($field, $value, $appendParams = []) :self
+    {
+        return $this->wherePrefix($field, $value, $appendParams,'and',true);
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWherePrefix($field, $value, $appendParams = []) :self
+    {
+        return $this->wherePrefix($field, $value, $appendParams,'or');
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWhereNotPrefix($field, $value, $appendParams = []) :self
+    {
+        return $this->wherePrefix($field, $value, $appendParams,'or',true);
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param $appendParams
+     * @param string $boolean
+     * @param bool $not
+     * @return $this
+     */
+    public function whereWildcard($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    {
+        $type = 'wildcard';
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        return $this;
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function whereNotWildcard($field, $value, $appendParams = []) :self
+    {
+        return $this->whereWildcard($field, $value, $appendParams,'and',true);
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWhereWildcard($field, $value, $appendParams = []) :self
+    {
+        return $this->whereWildcard($field, $value, $appendParams,'or');
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWhereNotWildcard($field, $value, $appendParams = []) :self
+    {
+        return $this->whereWildcard($field, $value, $appendParams,'or',true);
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param $appendParams
+     * @param string $boolean
+     * @param bool $not
+     * @return $this
+     */
+    public function whereRegexp($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    {
+        $type = 'regexp';
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        return $this;
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function whereNotRegexp($field, $value, $appendParams = []) :self
+    {
+        return $this->whereRegexp($field, $value, $appendParams,'and',true);
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWhereRegexp($field, $value, $appendParams = []) :self
+    {
+        return $this->whereRegexp($field, $value, $appendParams,'or');
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWhereNotRegexp($field, $value, $appendParams = []) :self
+    {
+        return $this->whereRegexp($field, $value, $appendParams,'or',true);
+    }
+
+
+    /**
+     * @param $field
+     * @param $value
+     * @param $appendParams
+     * @param string $boolean
+     * @param bool $not
+     * @return $this
+     */
+    public function whereFuzzy($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    {
+        $type = 'fuzzy';
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        return $this;
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function whereNotFuzzy($field, $value, $appendParams = []) :self
+    {
+        return $this->whereFuzzy($field, $value, $appendParams,'and',true);
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWhereFuzzy($field, $value, $appendParams = []) :self
+    {
+        return $this->whereFuzzy($field, $value, $appendParams,'or');
+    }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param array $appendParams
+     * @return $this
+     */
+    public function orWhereNotFuzzy($field, $value, $appendParams = []) :self
+    {
+        return $this->whereFuzzy($field, $value, $appendParams,'or',true);
+    }
+
+    /**
      * 后置过滤器
      * @param $field
      * @param null $operator
@@ -780,7 +973,7 @@ abstract class Builder
             }
             return $data;
         }catch(\Exception $e){
-            throw $e;
+            throw new Exception('数据解析错误-'.$e->getMessage());
         }
     }
 
@@ -841,6 +1034,7 @@ abstract class Builder
         if($directReturn){
             return $this->response;
         }
+        $data = null;
         if(isset($this->response['hits']['hits'][0])){
             $hit = $this->response['hits']['hits'][0];
             $data = $this->decorate(array_merge([
@@ -850,7 +1044,7 @@ abstract class Builder
                 '_score' => $hit['_score']
             ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
         }
-        return @$data;
+        return $data;
     }
 
     /**
@@ -861,47 +1055,6 @@ abstract class Builder
     {
         $this->runQuery();
         return $this->response['hits']['total'];
-    }
-
-    /**
-     * 批量操作
-     * @param callable $callback
-     * @param int $size
-     * @param string $scroll
-     */
-    public function chunk(callable $callback, int $size = 1000,$scroll = '2M')
-    {
-        if (empty($this->scroll)) {
-            $this->scroll = $scroll;
-        }
-
-        if (empty($this->size)) {
-            $this->size = $size;
-        }
-
-        $this->runQuery();
-
-        $this->scrollId = $this->response['_scroll_id'];
-
-        $total = $this->response['hits']['total'];
-
-        $whileNum = intval(floor($total / $this->size));
-
-        do {
-            $data = array_map(function($hit){
-                return array_merge([
-                    '_index' => $hit['_index'],
-                    '_type' => $hit['_type'],
-                    '_id' => $hit['_id'],
-                    '_score' => $hit['_score']
-                ],$hit['_source']);
-            },$this->response['hits']['hits']);
-
-            call_user_func($callback,$data);
-
-            $this->runQuery();
-
-        } while ($whileNum--);
     }
 
     /**
@@ -995,24 +1148,17 @@ abstract class Builder
         }
     }
 
-    protected function addArrayOfWheres($field, $boolean, $not)
+    protected function addArrayOfWheres($field, $boolean = 'and',$not = false)
     {
-        return $this->whereNested(function ($query) use ($field, $boolean, $not) {
+        return $this->whereNested(function (self $query) use ($field, $not) {
             foreach ($field as $key => $value) {
                 if (is_numeric($key) && is_array($value)) {
-                    $value = array_values($value);
-                    [$value[2], $value[1]] = $this->prepareValueAndOperator(
-                        @$value[2], @$value[1], count($value) === 2
-                    );
-                    $params = array_pad($value,5,null);
-                    $params[3] = $boolean;
-                    $params[4] = $not;
-                    $query->where(...$params);
+                    $query->where(...$value);
                 } else {
-                    $query->where($key, '=', $value, $boolean, $not);
+                    $query->where($key, '=', $value);
                 }
             }
-        }, $boolean);
+        }, $boolean, $not);
     }
 
     public function whereNested(Closure $callback, $boolean = 'and',$not = false) :self

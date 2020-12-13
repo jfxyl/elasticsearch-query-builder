@@ -74,7 +74,12 @@ class Grammar
                         array_push($bool['bool'][$operation],['bool' => ['must' => $must]]);
                     }
                 }else{
-                    array_push($bool['bool'][$operation],...$must);
+                    if(count($must) === 1){
+                        $bool = $must[0];
+                    }else{
+                        array_push($bool['bool'][$operation],...$must);
+                    }
+
                 }
             }
         }
@@ -111,7 +116,12 @@ class Grammar
                         array_push($bool['bool'][$operation],['bool' => ['must' => $must]]);
                     }
                 }else{
-                    array_push($bool['bool'][$operation],...$must);
+                    if(count($must) === 1){
+                        $bool = $must[0];
+                    }else{
+                        array_push($bool['bool'][$operation],...$must);
+                    }
+
                 }
             }
         }
@@ -220,7 +230,7 @@ class Grammar
                     ]
                 ];
                 if(!empty($where['appendParams'])){
-                    $term[$where['type']][$where['field']] = array_merge($where['appendParams'],$term[$where['type']][$where['field']]);
+                    $term[$where['type']][$where['field']] = array_merge($term[$where['type']][$where['field']],$where['appendParams']);
                 }
                 break;
             case 'multi_match':
@@ -232,7 +242,7 @@ class Grammar
                     ]
                 ];
                 if(!empty($where['appendParams'])){
-                    $term['multi_match'] = array_merge($where['appendParams'],$term['multi_match']);
+                    $term['multi_match'] = array_merge($term['multi_match'],$where['appendParams']);
                 }
                 break;
             case 'between':
@@ -254,6 +264,21 @@ class Grammar
                 break;
             case 'exists':
                 $term = ['exists' => ['field' => $where['field']]];
+                break;
+            case 'prefix':
+            case 'wildcard':
+            case 'regexp':
+            case 'fuzzy':
+                $term = [
+                    $where['type'] => [
+                        $where['field'] => [
+                            'value' => $where['value']
+                        ]
+                    ]
+                ];
+                if(!empty($where['appendParams'])){
+                    $term[$where['type']][$where['field']] = array_merge($term[$where['type']][$where['field']],$where['appendParams']);
+                }
                 break;
         }
         if($where['not']){

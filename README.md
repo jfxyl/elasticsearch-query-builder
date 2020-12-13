@@ -23,9 +23,9 @@ composer require jfxy/elasticsearch-query-builder
 ```
 
 #### where
-* where、orWhere闭包用法类似mysql中对条件前后加上()，在封装业务代码存在or关系时，应使用闭包包裹内部条件
 * 比较运算符支持 **=,>,>=,<,<=,!=,<>**
-* whereNot、orWhereNot方法在实现or和and条件时需要注意传参
+* where、orWhere、whereNot、orWhereNot均支持闭包调用，而orWhere、whereNot、orWhereNot则是对闭包内的整体条件进行 or 和 not 的操作，闭包用法类似mysql中对闭包内的条件前后加上（）
+* 在封装业务代码存在or关系时，应使用闭包包裹内部条件
 ```php
     public function where($column, $operator = null, $value = null, $match = 'term', $boolean = 'and',$not = false) :self
     public function orWhere($column, $operator = null, $value = null) :self
@@ -34,11 +34,14 @@ composer require jfxy/elasticsearch-query-builder
     
     ->where('id',1)
     ->where('id','=',1)
-    ->where('id',[1,2])        等同于         ->whereIn('id',[1,2])
-    ->where('news_postdate','>=','2020-09-01')
+    ->where('id',[1,2])                         // 等同于  ->whereIn('id',[1,2])
+    ->where('news_postdate','<=','2020-09-01')  // 等同于  ->whereBetween('news_postdate',['<=' => '2020-09-01'])
     
     // 闭包用法
     ->where(function($query){
+        return $query->where('id',1)->orWhere('status','>',0);
+    })
+    ->orWhere(function($query){
         return $query->where('id',1)->orWhere('status','>',0);
     })
     
@@ -48,16 +51,14 @@ composer require jfxy/elasticsearch-query-builder
         $query->where('id',1)->where('status',[0,1])->where('time','>=','2020-09-01');
     })
     
-    // whereNot实现 a != 1 or b != 2
+    // whereNot实现 a != 1 and b != 2
     ->whereNot('a',1)->whereNot('b',2)
-    ->whereNot(['a'=>1,'b'=>2])
     
-    // whereNot实现 a != 1 and b != 2，需要用whereNot闭包方式调用
+    // whereNot实现 a != 1 or b != 2，即not(a=1 and b=2)
+    ->whereNot(['a'=>1,'b'=>2])
     ->whereNot(function($query){
         $query->where('a',1)->where('b',2);
     })
-    
-    
 ```
 
 #### in
@@ -78,9 +79,9 @@ composer require jfxy/elasticsearch-query-builder
     public function orWhereBetween($column, array $value) :self
     public function orWhereNotBetween($column, array $value) :self
     
-    ->whereBetween('id',[1,10])
-    ->whereBetween('id',[1,'<' => 10])
-    ->whereBetween('id',['>=' => 1,'<' => 10])
+    ->whereBetween('id',[1,10])                     // 1 <= id <= 10
+    ->whereBetween('id',[1,'<' => 10])              // 1 <= id < 10
+    ->whereBetween('id',['>=' => 1,'<' => 10])      // 1 <= id < 10
 ```
 
 #### exists
@@ -92,6 +93,46 @@ composer require jfxy/elasticsearch-query-builder
     public function orWhereNotExists($column) :self
     
     ->whereExists('news_uuid')
+```
+
+#### prefix 前缀匹配
+```php
+    public function wherePrefix($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereNotPrefix($field, $value, $appendParams = []) :self
+    public function orWherePrefix($field, $value, $appendParams = []) :self
+    public function orWhereNotPrefix($field, $value, $appendParams = []) :self
+    
+    ->wherePrefix('news_url','http://www.baidu.com')
+```
+
+#### wildcard 通配符匹配
+```php
+    public function whereWildcard($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereNotWildcard($field, $value, $appendParams = []) :self
+    public function orWhereWildcard($field, $value, $appendParams = []) :self
+    public function orWhereNotWildcard($field, $value, $appendParams = []) :self
+    
+    ->whereWildcard('media_name','*公安')
+```
+
+#### regexp 正则匹配
+```php
+    public function whereRegexp($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereNotRegexp($field, $value, $appendParams = []) :self
+    public function orWhereRegexp($field, $value, $appendParams = []) :self
+    public function orWhereNotRegexp($field, $value, $appendParams = []) :self
+    
+    ->whereRegexp('media_name','.*公安')
+```
+
+#### fuzzy 模糊查询
+```php
+    public function whereFuzzy($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereNotFuzzy($field, $value, $appendParams = []) :self
+    public function orWhereFuzzy($field, $value, $appendParams = []) :self
+    public function orWhereNotFuzzy($field, $value, $appendParams = []) :self
+    
+    ->whereFuzzy('news_title','安徽合肥')
 ```
 
 #### match
@@ -114,7 +155,7 @@ composer require jfxy/elasticsearch-query-builder
 ```
 
 #### postWhere 后置过滤器
-* postWhere方法添加的条件会作用于post_filter查询
+* postWhere方法添加的条件会作用于post_filter查询，条件作用于聚合之后
 * postWhere方法参数同where方法相同，复杂的检索可以传入数组或闭包
 ```php
     public function postWhere($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
@@ -401,13 +442,15 @@ composer require jfxy/elasticsearch-query-builder
     public function count()
 ```
 
-#### chunk 批量处理
+#### scroll 游标
 ```php
-    public function chunk(callable $callback, int $size = 1000,$scroll = '2M')
-    
-    ->chunk(function($data)use($aa){
-        print_r(count($data) * $aa."\n");
-    });
+    $data = Es::init()->scroll()->size(1000)->where('platform','app')->get();
+    $es = Es::init();
+    while(true){
+        $data = $es->scrollId($data['scroll_id'])->get();
+        // do something
+        ...
+    }
 ```
 
 ## 封装示例
