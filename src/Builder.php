@@ -959,7 +959,6 @@ abstract class Builder
                     '_score' => $hit['_score']
                 ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
             },$this->response['hits']['hits']);
-
             $data = [
                 'total' => $this->response['hits']['total'],
                 'list' => $list
@@ -995,32 +994,32 @@ abstract class Builder
             $collapseField = is_string($this->collapse) ? $this->collapse : $this->collapse['field'];
             $this->cardinality($collapseField);
         }
-
         $this->runQuery();
-
-        if(!empty($this->collapse)){
-            $total = $this->response['aggregations'][$collapseField.'_cardinality']['value'];
-        }else{
-            $total = $this->response['hits']['total'];
+        try {
+            $original_total = $total = $this->response['hits']['total'];
+            if (!empty($this->collapse)) {
+                $total = $this->response['aggregations'][$collapseField . '_cardinality']['value'];
+            }
+            $list = array_map(function ($hit) {
+                return $this->decorate(array_merge([
+                    '_index' => $hit['_index'],
+                    '_type' => $hit['_type'],
+                    '_id' => $hit['_id'],
+                    '_score' => $hit['_score']
+                ], $hit['_source'], isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
+            }, $this->response['hits']['hits']);
+            $maxPage = intval(ceil($total / $size));
+            return [
+                'total' => $total,
+                'original_total' => $original_total,
+                'per_page' => $size,
+                'current_page' => $page,
+                'last_page' => $maxPage,
+                'list' => $list
+            ];
+        }catch(\Exception $e){
+            throw new Exception('数据解析错误-'.$e->getMessage());
         }
-
-        $list = array_map(function($hit){
-            return $this->decorate(array_merge([
-                '_index' => $hit['_index'],
-                '_type' => $hit['_type'],
-                '_id' => $hit['_id'],
-                '_score' => $hit['_score']
-            ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
-        },$this->response['hits']['hits']);
-
-        $maxPage = intval(ceil($total / $size));
-        return [
-            'total' => $total,
-            'per_page' => $size,
-            'current_page' => $page,
-            'last_page' => $maxPage,
-            'list' => $list
-        ];
     }
 
     /**
@@ -1161,7 +1160,7 @@ abstract class Builder
         }, $boolean, $not);
     }
 
-    public function whereNested(Closure $callback, $boolean = 'and',$not = false) :self
+    protected function whereNested(Closure $callback, $boolean = 'and',$not = false) :self
     {
         call_user_func($callback, $query = $this->newQuery());
         return $this->addNestedWhereQuery($query, $boolean, $not);

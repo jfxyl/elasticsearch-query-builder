@@ -423,11 +423,12 @@ composer require jfxy/elasticsearch-query-builder
     ->collapse('news_sim_hash')->paginator()
     
     [
-        'total'         => 文档总数,
-        'per_page'      => 每页条数,
-        'current_page'  => 当前页码,
-        'last_page'     => 最大页码,
-        'list'          => 文档列表
+        'total'             => 文档总数（存在collapse时，是计算折叠后的总数）,
+        'original_total'    => 文档总数（不受collapse影响）,
+        'per_page'          => 每页条数,
+        'current_page'      => 当前页码,
+        'last_page'         => 最大页码,
+        'list'              => 文档列表
     ]
 ```
 
