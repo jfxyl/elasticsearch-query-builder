@@ -1143,7 +1143,7 @@ abstract class Builder
             $this->response = $this->scrollQuery();
         }
         if(is_string($this->response)){
-            $this->response = json_decode($this->response,JSON_UNESCAPED_UNICODE);
+            $this->response = json_decode($this->response,true);
         }
     }
 
