@@ -1009,7 +1009,7 @@ abstract class Builder
                 ], $hit['_source'], isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
             }, $this->response['hits']['hits']);
             $maxPage = intval(ceil($total / $size));
-            return [
+            $data = [
                 'total' => $total,
                 'original_total' => $original_total,
                 'per_page' => $size,
@@ -1017,6 +1017,10 @@ abstract class Builder
                 'last_page' => $maxPage,
                 'list' => $list
             ];
+            if(isset($this->response['aggregations'])){
+                $data['aggs'] = $this->response['aggregations'];
+            }
+            return $data;
         }catch(\Exception $e){
             throw new Exception('数据解析错误-'.$e->getMessage());
         }

@@ -428,7 +428,8 @@ composer require jfxy/elasticsearch-query-builder
         'per_page'          => 每页条数,
         'current_page'      => 当前页码,
         'last_page'         => 最大页码,
-        'list'              => 文档列表
+        'list'              => 文档列表,
+        'aggs'              => 聚合结果（存在聚合时返回）
     ]
 ```
 
