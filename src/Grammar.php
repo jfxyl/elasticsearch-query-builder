@@ -280,6 +280,9 @@ class Grammar
                     $term[$where['type']][$where['field']] = array_merge($term[$where['type']][$where['field']],$where['appendParams']);
                 }
                 break;
+            case 'raw':
+                $term = $where['where'];
+                break;
         }
         if($where['not']){
             $term = ['bool'=>['must_not'=>$term]];

@@ -596,6 +596,29 @@ abstract class Builder
     }
 
     /**
+     * @param $where
+     * @param string $boolean
+     * @param bool $not
+     * @return Builder
+     */
+    public function whereRaw($where, $boolean = 'and', $not = false) :self
+    {
+        $type = 'raw';
+        $where = is_string($where) ? json_decode($where,true) : $where;
+        $this->wheres[] = compact('type','where','boolean','not');
+        return $this;
+    }
+
+    /**
+     * @param $where
+     * @return Builder
+     */
+    public function orWhereRaw($where) :self
+    {
+        return $this->whereRaw($where, 'or');
+    }
+
+    /**
      * 后置过滤器
      * @param $field
      * @param null $operator

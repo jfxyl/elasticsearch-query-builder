@@ -135,6 +135,35 @@ composer require jfxy/elasticsearch-query-builder
     ->whereFuzzy('news_title','安徽合肥')
 ```
 
+#### whereRaw 原生条件
+```php
+    public function whereRaw($where, $boolean = 'and', $not = false) :self
+    public function orWhereRaw($where) :self
+    
+    // 下面的例子是由于where方法提供的term查询无法设置一些其他的参数,可以改为使用whereRaw
+    ->whereRaw([
+       "term" => [
+           "news_title" => [
+               "value" => "安徽",
+               "boost" => 2
+           ]
+       ]
+   ])
+   
+   ->whereRaw([
+       'bool' => [
+           'must' => [
+               "term" => [
+                   "news_title" => [
+                       "value" => "安徽",
+                       "boost" => 2
+                   ]
+               ]
+           ]
+       ]
+   ])
+```
+
 #### match
 * whereMatch方法，$type=match、match_phrase、match_phrase_prefix   
 * whereMultiMatch方法，$type=best_fields、most_fields、cross_fields、phrase、phrase_prefix
