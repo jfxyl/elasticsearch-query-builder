@@ -183,6 +183,23 @@ composer require jfxy/elasticsearch-query-builder
     ->whereMultiMatch(['news_title','news_content'],'上海','phrase',["operator" => "OR"])
 ```
 
+#### minimumShouldMatch 最小匹配度
+```php
+    public function minimumShouldMatch($value) :self
+    
+    ->where('aa',1)->orWhere('bb',1)->orWhere('cc',1)->minimumShouldMatch(2)
+    
+    ->where(function(Es $query){
+        $query->where('aa',1)->orWhere('bb',1)->orWhere('cc',1)
+            ->minimumShouldMatch('50%');
+    })
+    
+    ->postWhere(function(Es $query){
+        $query->where('aa',1)->orWhere('bb',1)->orWhere('cc',1)
+            ->minimumShouldMatch('50%');
+    })
+```
+
 #### postWhere 后置过滤器
 * postWhere方法添加的条件会作用于post_filter查询，条件作用于聚合之后
 * postWhere方法参数同where方法相同，复杂的检索可以传入数组或闭包

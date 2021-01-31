@@ -8,33 +8,35 @@ abstract class Builder
 {
     public $wheres = [];
 
-    public $postWheres = null;
+    public $postWheres;
 
-    public $fields = null;
+    public $fields;
 
-    public $from = null;
+    public $from;
 
-    public $size = null;
+    public $size;
 
-    public $orders = null;
+    public $orders;
 
-    public $aggs = null;
+    public $aggs;
 
-    public $collapse = null;
+    public $collapse;
 
-    public $highlight = null;
+    public $highlight;
 
-    public $dsl = null;
+    public $dsl;
 
-    public $scroll = null;
+    public $scroll;
 
-    public $scrollId = null;
+    public $scrollId;
+
+    public $minimumShouldMatch;
 
     public $highlightConfig = [];
 
-    protected $grammar = null;
+    protected $grammar;
 
-    protected $response = null;
+    protected $response;
 
     protected $operatorMappings = [
         '=' => 'eq',
@@ -674,7 +676,6 @@ abstract class Builder
     public function from(int $value) :self
     {
         $this->from = $value;
-
         return $this;
     }
 
@@ -685,7 +686,6 @@ abstract class Builder
     public function size(int $value) :self
     {
         $this->size = $value;
-
         return $this;
     }
 
@@ -697,7 +697,6 @@ abstract class Builder
     public function orderBy(string $field, $sort = 'asc') :self
     {
         $this->orders[$field] = $sort;
-
         return $this;
     }
 
@@ -711,7 +710,7 @@ abstract class Builder
      * ]
      * @return $this
      */
-    public function highlight(string $field,array $params = [])
+    public function highlight(string $field,array $params = []) :self
     {
         $this->highlight[$field] = $params;
         return $this;
@@ -729,9 +728,19 @@ abstract class Builder
      * ]
      * @return $this
      */
-    public function highlightConfig(array $config = [])
+    public function highlightConfig(array $config = []) :self
     {
         $this->highlightConfig = array_merge($this->highlightConfig,$config);
+        return $this;
+    }
+
+    /**
+     * @param $value
+     * @return $this
+     */
+    public function minimumShouldMatch($value) :self
+    {
+        $this->minimumShouldMatch = $value;
         return $this;
     }
 

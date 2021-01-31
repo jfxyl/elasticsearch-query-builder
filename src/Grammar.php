@@ -83,6 +83,9 @@ class Grammar
                 }
             }
         }
+        if(!is_null($builder->minimumShouldMatch)){
+            $bool['bool']['minimum_should_match'] = $builder->minimumShouldMatch;
+        }
         if($not){
             $bool = [
                 'bool' => [
