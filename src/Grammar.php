@@ -48,7 +48,7 @@ class Grammar
         return $builder->fields;
     }
 
-    public function compileWheres($builder,$not = false) :array
+    public function compileWheres($builder,$filter = false,$not = false) :array
     {
         if(empty($builder->wheres)){
             return ["match_all" => new \stdClass()];
@@ -57,41 +57,57 @@ class Grammar
         $operation = count($whereGroups) === 1 ? 'must' : 'should';
         $bool = [];
         foreach($whereGroups as $wheres){
-            $must = [];
+            $must = $must_not = $filter = [];
             foreach($wheres as $where){
-                if($where['type'] === 'Nested'){
-                    $must[] = $this->compileWheres($where['query'],$where['not']);
+                if($where['type'] === 'nestedQuery'){
+                    $tmp = $this->compileWheres($where['query'],$where['filter'],$where['not']);
                 }else{
-                    $must[] = $this->whereMatch($where);
+                    $tmp = $this->whereMatch($where);
+                }
+                if($where['filter']){
+                    $filter[] = $tmp;
+                }elseif($where['not']){
+                    $must_not[] = $tmp;
+                }else{
+                    $must[] = $tmp;
                 }
             }
-            if (!empty($must)) {
+            if($operation == 'should'){
                 $bool['bool'][$operation] = $bool['bool'][$operation] ?? [];
-                if($operation == 'should'){
-                    if(count($must) === 1){
-                        array_push($bool['bool'][$operation],array_shift($must));
+                $tmp = [];
+                if(!empty($must)){
+                    if(count($must) === 1 && empty($must_not) && empty($filter)){
+                        $tmp = $must[0];
                     }else{
-                        array_push($bool['bool'][$operation],['bool' => ['must' => $must]]);
+                        $tmp['bool']['must'] = $must;
                     }
-                }else{
-                    if(count($must) === 1){
+                }
+                if (!empty($must_not)) {
+                    $tmp['bool']['must_not'] = $must_not;
+                }
+                if (!empty($filter)) {
+                    $tmp['bool']['filter'] = $filter;
+                }
+                print_r($tmp);
+                array_push($bool['bool'][$operation],$tmp);
+            }else{
+                if(!empty($must)){
+                    if(count($must) === 1 && empty($must_not) && empty($filter)){
                         $bool = $must[0];
                     }else{
-                        array_push($bool['bool'][$operation],...$must);
+                        $bool['bool']['must'] = $must;
                     }
-
+                }
+                if (!empty($must_not)) {
+                    $bool['bool']['must_not'] = $must_not;
+                }
+                if (!empty($filter)) {
+                    $bool['bool']['filter'] = $filter;
                 }
             }
         }
         if(!is_null($builder->minimumShouldMatch)){
             $bool['bool']['minimum_should_match'] = $builder->minimumShouldMatch;
-        }
-        if($not){
-            $bool = [
-                'bool' => [
-                    'must_not' => $bool
-                ]
-            ];
         }
         return $bool;
     }
@@ -102,13 +118,14 @@ class Grammar
         $operation = count($whereGroups) === 1 ? 'must' : 'should';
         $bool = [];
         foreach($whereGroups as $wheres){
-            $must = [];
+            $must = $filter = [];
             foreach($wheres as $where){
-                if($where['type'] === 'Nested'){
-                    $must[] = $this->compileWheres($where['query'],$where['not']);
+                if($where['type'] === 'nestedQuery'){
+                    $tmp = $this->compileWheres($where['query'],$where['filter'],$where['not']);
                 }else{
-                    $must[] = $this->whereMatch($where);
+                    $tmp = $this->whereMatch($where);
                 }
+                $where['filter'] ? $filter[] = $tmp : $must[] = $tmp;
             }
             if (!empty($must)) {
                 $bool['bool'][$operation] = $bool['bool'][$operation] ?? [];
@@ -125,6 +142,15 @@ class Grammar
                         array_push($bool['bool'][$operation],...$must);
                     }
 
+                }
+            }
+            if (!empty($filter)) {
+                $bool['bool']['filter'] = $bool['bool']['filter'] ?? [];
+
+                if(count($filter) === 1){
+                    $bool = $filter[0];
+                }else{
+                    array_push($bool['bool']['filter'],...$filter);
                 }
             }
         }
@@ -283,11 +309,19 @@ class Grammar
                     $term[$where['type']][$where['field']] = array_merge($term[$where['type']][$where['field']],$where['appendParams']);
                 }
                 break;
-            case 'raw':
-                $term = $where['where'];
+            case 'nested':
+                $term = [
+                    'nested' => [
+                        'path' => $where['path'],
+                        'query' => $this->compileWheres($where['query'],$where['filter'],$where['not'])
+                    ]
+                ];
+                if(!empty($where['appendParams'])){
+                    $term['nested'] = array_merge($term['nested'],$where['appendParams']);
+                }
                 break;
         }
-        if($where['not']){
+        if(@$where['filter'] && $where['not']){
             $term = ['bool'=>['must_not'=>$term]];
         }
         return $term;

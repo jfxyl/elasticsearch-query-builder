@@ -67,8 +67,15 @@ abstract class Builder
     public function select($fields) :self
     {
         $this->fields = is_array($fields) ? $fields : func_get_args();
-
         return $this;
+    }
+
+    public function filter($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    {
+        [$value, $operator] = $this->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+        return $this->where($field, $operator, $value, $boolean,$not,true);
     }
 
     /**
@@ -81,14 +88,13 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function where($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    public function where($field, $operator = null, $value = null, $boolean = 'and', $not = false, $filter = false) :self
     {
         if (is_array($field)) {
-            return $this->addArrayOfWheres($field, $boolean, $not);
+            return $this->addArrayOfWheres($field, $boolean, $not, $filter);
         }
-
         if ($field instanceof Closure && is_null($operator)) {
-            return $this->whereNested($field, $boolean, $not);
+            return $this->nestedQuery($field, $boolean, $not, $filter);
         }
 
         [$value, $operator] = $this->prepareValueAndOperator(
@@ -100,18 +106,18 @@ abstract class Builder
         }
 
         if(is_array($value)){
-            return $this->whereIn($field, $value, $boolean, $not);
+            return $this->whereIn($field, $value, $boolean, $not, $filter);
         }
 
         if(in_array($operator,['>','<','>=','<='])){
             $value = [$operator => $value];
-            return $this->whereBetween($field, $value, $boolean, $not);
+            return $this->whereBetween($field, $value, $boolean, $not, $filter);
         }
 
         $type = 'basic';
 
         $this->wheres[] = compact(
-            'type', 'field', 'operator', 'value', 'boolean', 'not'
+            'type', 'field', 'operator', 'value', 'boolean', 'not', 'filter'
         );
         return $this;
     }
@@ -141,7 +147,7 @@ abstract class Builder
     public function whereNot($field, $operator = null, $value = null) :self
     {
         if ($field instanceof Closure && is_null($operator)) {
-            return $this->whereNested($field, 'and', true);
+            return $this->nestedQuery($field, 'and', true);
         }
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
@@ -158,7 +164,7 @@ abstract class Builder
     public function orWhereNot($field, $operator = null, $value = null) :self
     {
         if ($field instanceof Closure && is_null($operator)) {
-            return $this->whereNested($field, 'or', true);
+            return $this->nestedQuery($field, 'or', true);
         }
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
@@ -177,10 +183,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereMatch($field, $value = null,$type = 'match',array $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereMatch($field, $value = null,$type = 'match',array $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
     {
         $this->wheres[] = compact(
-            'type', 'field', 'value', 'appendParams', 'boolean', 'not'
+            'type', 'field', 'value', 'appendParams', 'boolean', 'not', 'filter'
         );
         return $this;
     }
@@ -231,11 +237,11 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
     {
         [$type,$matchType] = ['multi_match',$type];
         $this->wheres[] = compact(
-            'type', 'field', 'value', 'matchType', 'appendParams', 'boolean', 'not'
+            'type', 'field', 'value', 'matchType', 'appendParams', 'boolean', 'not', 'filter'
         );
         return $this;
     }
@@ -283,10 +289,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereIn($field, array $value, $boolean = 'and', $not = false) :self
+    public function whereIn($field, array $value, $boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'in';
-        $this->wheres[] = compact('type', 'field', 'value', 'boolean', 'not');
+        $this->wheres[] = compact('type', 'field', 'value', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -327,10 +333,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereBetween($field, array $value, $boolean = 'and', $not = false) :self
+    public function whereBetween($field, array $value, $boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'between';
-        $this->wheres[] = compact('type','field','value','boolean','not');
+        $this->wheres[] = compact('type','field','value','boolean','not','filter');
         return $this;
     }
 
@@ -370,10 +376,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereExists($field,$boolean = 'and', $not = false) :self
+    public function whereExists($field,$boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'exists';
-        $this->wheres[] = compact('type','field','boolean','not');
+        $this->wheres[] = compact('type','field', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -412,10 +418,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function wherePrefix($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function wherePrefix($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'prefix';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
         return $this;
     }
 
@@ -460,10 +466,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereWildcard($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereWildcard($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'wildcard';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
         return $this;
     }
 
@@ -508,10 +514,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereRegexp($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereRegexp($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'regexp';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
         return $this;
     }
 
@@ -557,10 +563,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereFuzzy($field, $value, $appendParams = [], $boolean = 'and', $not = false) :self
+    public function whereFuzzy($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'fuzzy';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not');
+        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
         return $this;
     }
 
@@ -598,16 +604,38 @@ abstract class Builder
     }
 
     /**
+     * nested类型字段查询
+     * @param $path
+     * @param $wheres
+     * @param $appendParams
+     * @return $this
+     * @throws Exception
+     */
+    public function whereNested($path,$wheres,$appendParams = []) :self
+    {
+        if(!($wheres instanceof Closure) && !is_array($wheres)){
+            throw new Exception('非法参数');
+        }
+        $type = 'nested';
+        $boolean = 'and';
+        $not = false;
+        $filter = false;
+        $query = $this->newQuery()->where($wheres);
+        $this->wheres[] = compact('type','path', 'query', 'appendParams', 'boolean', 'not', 'filter');
+        return $this;
+    }
+
+    /**
      * @param $where
      * @param string $boolean
      * @param bool $not
      * @return Builder
      */
-    public function whereRaw($where, $boolean = 'and', $not = false) :self
+    public function whereRaw($where, $boolean = 'and', $not = false, $filter = false) :self
     {
         $type = 'raw';
         $where = is_string($where) ? json_decode($where,true) : $where;
-        $this->wheres[] = compact('type','where','boolean','not');
+        $this->wheres[] = compact('type','where','boolean','not','filter');
         return $this;
     }
 
@@ -630,7 +658,7 @@ abstract class Builder
      * @return Builder
      * @throws Exception
      */
-    public function postWhere($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    public function postWhere($field, $operator = null, $value = null, $boolean = 'and',$not = false, $filter = false) :self
     {
         $query = $this->newQuery()->where(...func_get_args());
         $this->postWheres = is_array($this->postWheres) ? $this->postWheres : [];
@@ -748,7 +776,7 @@ abstract class Builder
      * @param string $scroll
      * @return $this
      */
-    public function scroll($scroll = '2M') :self
+    public function scroll($scroll = '2m') :self
     {
         $this->scroll = $scroll;
         return $this;
@@ -942,6 +970,46 @@ abstract class Builder
     public function aggsFilter(string $alias,$wheres,... $subGroups) :self
     {
         return $this->aggs($alias,'filter',$this->newQuery()->where($wheres), ... $subGroups);
+    }
+
+    protected function addArrayOfWheres($field, $boolean = 'and',$not = false,$filter = false)
+    {
+        return $this->nestedQuery(function (self $query) use ($field, $not, $filter) {
+            foreach ($field as $key => $value) {
+                if (is_numeric($key) && is_array($value)) {
+                    $query->where(...$value);
+                } else {
+                    $query->where($key, '=', $value);
+                }
+            }
+        }, $boolean, $not, $filter);
+    }
+
+    protected function nestedQuery(Closure $callback, $boolean = 'and',$not = false, $filter = false) :self
+    {
+        call_user_func($callback, $query = $this->newQuery());
+        if (count($query->wheres)) {
+            $type = 'nestedQuery';
+            $this->wheres[] = compact('type', 'query', 'boolean', 'not', 'filter');
+        }
+        return $this;
+    }
+
+    protected function newQuery()
+    {
+        return new static();
+    }
+
+    protected function prepareValueAndOperator($value, $operator, $useDefault = false)
+    {
+        if ($useDefault) {
+            return [$operator, '='];
+        } elseif (is_null($value) && in_array($operator, $this->operators)) {
+            throw new Exception('非法运算符和值组合');
+        } elseif (is_array($value) && !in_array($operator, ['=','!=','<>'])) {
+            throw new Exception('非法运算符和值组合');
+        }
+        return [$value, $operator];
     }
 
     /**
@@ -1181,51 +1249,6 @@ abstract class Builder
         if(is_string($this->response)){
             $this->response = json_decode($this->response,true);
         }
-    }
-
-    protected function addArrayOfWheres($field, $boolean = 'and',$not = false)
-    {
-        return $this->whereNested(function (self $query) use ($field, $not) {
-            foreach ($field as $key => $value) {
-                if (is_numeric($key) && is_array($value)) {
-                    $query->where(...$value);
-                } else {
-                    $query->where($key, '=', $value);
-                }
-            }
-        }, $boolean, $not);
-    }
-
-    protected function whereNested(Closure $callback, $boolean = 'and',$not = false) :self
-    {
-        call_user_func($callback, $query = $this->newQuery());
-        return $this->addNestedWhereQuery($query, $boolean, $not);
-    }
-
-    protected function newQuery()
-    {
-        return new static();
-    }
-
-    protected function prepareValueAndOperator($value, $operator, $useDefault = false)
-    {
-        if ($useDefault) {
-            return [$operator, '='];
-        } elseif (is_null($value) && in_array($operator, $this->operators)) {
-            throw new Exception('非法运算符和值组合');
-        } elseif (is_array($value) && !in_array($operator, ['=','!=','<>'])) {
-            throw new Exception('非法运算符和值组合');
-        }
-        return [$value, $operator];
-    }
-
-    protected function addNestedWhereQuery($query, $boolean = 'and', $not = false)
-    {
-        if (count($query->wheres)) {
-            $type = 'Nested';
-            $this->wheres[] = compact('type', 'query', 'boolean','not');
-        }
-        return $this;
     }
 
     /**
