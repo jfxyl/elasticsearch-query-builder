@@ -57,7 +57,7 @@ class Grammar
         $operation = count($whereGroups) === 1 ? 'must' : 'should';
         $bool = [];
         foreach($whereGroups as $wheres){
-            $must = $must_not = $filter = [];
+            $boolMust = $boolMustNot = $boolFilter = [];
             foreach($wheres as $where){
                 if($where['type'] === 'nestedQuery'){
                     $tmp = $this->compileWheres($where['query'],$where['filter'],$where['not']);
@@ -65,96 +65,117 @@ class Grammar
                     $tmp = $this->whereMatch($where);
                 }
                 if($where['filter']){
-                    $filter[] = $tmp;
+                    $boolFilter[] = $tmp;
                 }elseif($where['not']){
-                    $must_not[] = $tmp;
+                    $boolMustNot[] = $tmp;
                 }else{
-                    $must[] = $tmp;
+                    $boolMust[] = $tmp;
                 }
             }
             if($operation == 'should'){
                 $bool['bool'][$operation] = $bool['bool'][$operation] ?? [];
                 $tmp = [];
-                if(!empty($must)){
-                    if(count($must) === 1 && empty($must_not) && empty($filter)){
-                        $tmp = $must[0];
+                if(!empty($boolMust)){
+                    if(count($boolMust) === 1 && empty($boolMustNot) && empty($boolFilter)){
+                        $tmp = $boolMust[0];
                     }else{
-                        $tmp['bool']['must'] = $must;
+                        $tmp['bool']['must'] = $boolMust;
                     }
                 }
-                if (!empty($must_not)) {
-                    $tmp['bool']['must_not'] = $must_not;
+                if(!empty($boolMustNot)) {
+                    $tmp['bool']['must_not'] = $boolMustNot;
                 }
-                if (!empty($filter)) {
-                    $tmp['bool']['filter'] = $filter;
+                if(!empty($boolFilter)) {
+                    $tmp['bool']['filter'] = $boolFilter;
                 }
-                print_r($tmp);
                 array_push($bool['bool'][$operation],$tmp);
             }else{
-                if(!empty($must)){
-                    if(count($must) === 1 && empty($must_not) && empty($filter)){
-                        $bool = $must[0];
+                if(!empty($boolMust)){
+                    if(count($boolMust) === 1 && empty($boolMustNot) && empty($boolFilter)){
+                        $bool = $boolMust[0];
                     }else{
-                        $bool['bool']['must'] = $must;
+                        $bool['bool']['must'] = $boolMust;
                     }
                 }
-                if (!empty($must_not)) {
-                    $bool['bool']['must_not'] = $must_not;
+                if(!empty($boolMustNot)){
+                    $bool['bool']['must_not'] = $boolMustNot;
                 }
-                if (!empty($filter)) {
-                    $bool['bool']['filter'] = $filter;
+                if(!empty($boolFilter)){
+                    $bool['bool']['filter'] = $boolFilter;
                 }
             }
         }
         if(!is_null($builder->minimumShouldMatch)){
             $bool['bool']['minimum_should_match'] = $builder->minimumShouldMatch;
         }
+        if($filter && $not){
+            $bool = [
+                'bool' => [
+                    'must_not' => $bool
+                ]
+            ];
+        }
         return $bool;
     }
 
-    public function compilePostWheres($builder,$not = false) :array
+    public function compilePostWheres($builder,$filter = false,$not = false) :array
     {
         $whereGroups = $this->wherePriorityGroup($builder->postWheres);
         $operation = count($whereGroups) === 1 ? 'must' : 'should';
         $bool = [];
         foreach($whereGroups as $wheres){
-            $must = $filter = [];
+            $boolMust = $boolMustNot = $boolFilter = [];
             foreach($wheres as $where){
                 if($where['type'] === 'nestedQuery'){
                     $tmp = $this->compileWheres($where['query'],$where['filter'],$where['not']);
                 }else{
                     $tmp = $this->whereMatch($where);
                 }
-                $where['filter'] ? $filter[] = $tmp : $must[] = $tmp;
-            }
-            if (!empty($must)) {
-                $bool['bool'][$operation] = $bool['bool'][$operation] ?? [];
-                if($operation == 'should'){
-                    if(count($must) === 1){
-                        array_push($bool['bool'][$operation],array_shift($must));
-                    }else{
-                        array_push($bool['bool'][$operation],['bool' => ['must' => $must]]);
-                    }
+                if($where['filter']){
+                    $boolFilter[] = $tmp;
+                }elseif($where['not']){
+                    $boolMustNot[] = $tmp;
                 }else{
-                    if(count($must) === 1){
-                        $bool = $must[0];
-                    }else{
-                        array_push($bool['bool'][$operation],...$must);
-                    }
-
+                    $boolMust[] = $tmp;
                 }
             }
-            if (!empty($filter)) {
-                $bool['bool']['filter'] = $bool['bool']['filter'] ?? [];
-
-                if(count($filter) === 1){
-                    $bool = $filter[0];
-                }else{
-                    array_push($bool['bool']['filter'],...$filter);
+            if($operation == 'should'){
+                $bool['bool'][$operation] = $bool['bool'][$operation] ?? [];
+                $tmp = [];
+                if(!empty($boolMust)){
+                    if(count($boolMust) === 1 && empty($boolMustNot) && empty($boolFilter)){
+                        $tmp = $boolMust[0];
+                    }else{
+                        $tmp['bool']['must'] = $boolMust;
+                    }
+                }
+                if (!empty($boolMustNot)) {
+                    $tmp['bool']['must_not'] = $boolMustNot;
+                }
+                if (!empty($boolFilter)) {
+                    $tmp['bool']['filter'] = $boolFilter;
+                }
+                array_push($bool['bool'][$operation],$tmp);
+            }else{
+                if(!empty($boolMust)){
+                    if(count($boolMust) === 1 && empty($boolMustNot) && empty($boolFilter)){
+                        $bool = $boolMust[0];
+                    }else{
+                        $bool['bool']['must'] = $boolMust;
+                    }
+                }
+                if (!empty($boolMustNot)) {
+                    $bool['bool']['must_not'] = $boolMustNot;
+                }
+                if (!empty($boolFilter)) {
+                    $bool['bool']['filter'] = $boolFilter;
                 }
             }
         }
-        if($not){
+        if(!is_null($builder->minimumShouldMatch)){
+            $bool['bool']['minimum_should_match'] = $builder->minimumShouldMatch;
+        }
+        if($filter && $not){
             $bool = [
                 'bool' => [
                     'must_not' => $bool

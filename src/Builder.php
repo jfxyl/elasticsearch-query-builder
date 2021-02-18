@@ -70,14 +70,6 @@ abstract class Builder
         return $this;
     }
 
-    public function filter($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-        return $this->where($field, $operator, $value, $boolean,$not,true);
-    }
-
     /**
      * @param $field
      * @param null $operator
@@ -146,9 +138,6 @@ abstract class Builder
      */
     public function whereNot($field, $operator = null, $value = null) :self
     {
-        if ($field instanceof Closure && is_null($operator)) {
-            return $this->nestedQuery($field, 'and', true);
-        }
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
@@ -163,15 +152,69 @@ abstract class Builder
      */
     public function orWhereNot($field, $operator = null, $value = null) :self
     {
-        if ($field instanceof Closure && is_null($operator)) {
-            return $this->nestedQuery($field, 'or', true);
-        }
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
         return $this->where($field, $operator, $value,'or',true);
     }
 
+    /**
+     * @param $field
+     * @param null $operator
+     * @param null $value
+     * @param string $boolean
+     * @param bool $not
+     * @return $this
+     */
+    public function filter($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    {
+        [$value, $operator] = $this->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+        return $this->where($field, $operator, $value, $boolean,$not,true);
+    }
+
+    /**
+     * @param $field
+     * @param null $operator
+     * @param null $value
+     * @return $this
+     */
+    public function orFilter($field, $operator = null, $value = null) :self
+    {
+        [$value, $operator] = $this->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+        return $this->filter($field, $operator, $value, 'or');
+    }
+
+    /**
+     * @param $field
+     * @param null $operator
+     * @param null $value
+     * @return $this
+     */
+    public function filterNot($field, $operator = null, $value = null) :self
+    {
+        [$value, $operator] = $this->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+        return $this->filter($field, $operator, $value, 'and',true);
+    }
+
+    /**
+     * @param $field
+     * @param null $operator
+     * @param null $value
+     * @return $this
+     */
+    public function orFilterNot($field, $operator = null, $value = null) :self
+    {
+        [$value, $operator] = $this->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+        return $this->filter($field, $operator, $value, 'or',true);
+    }
 
     /**
      * 单字段查询
