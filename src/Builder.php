@@ -74,9 +74,9 @@ abstract class Builder
      * @param $field
      * @param null $operator
      * @param null $value
-     * @param string $match
      * @param string $boolean
      * @param bool $not
+     * @param bool $filter
      * @return $this
      * @throws Exception
      */

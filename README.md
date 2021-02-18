@@ -16,7 +16,7 @@ composer require jfxy/elasticsearch-query-builder
 ## 方法
 #### select
 ```php
-    public function select($columns) :self
+    public function select($fields) :self
     
     ->select('id','name')
     ->select(['id','name'])
@@ -27,10 +27,10 @@ composer require jfxy/elasticsearch-query-builder
 * where、orWhere、whereNot、orWhereNot均支持闭包调用，而orWhere、whereNot、orWhereNot则是对闭包内的整体条件进行 or 和 not 的操作，闭包用法类似mysql中对闭包内的条件前后加上（）
 * 在封装业务代码存在or关系时，应使用闭包包裹内部条件
 ```php
-    public function where($column, $operator = null, $value = null, $match = 'term', $boolean = 'and',$not = false) :self
-    public function orWhere($column, $operator = null, $value = null) :self
-    public function whereNot($column, $value = null) :self
-    public function orWhereNot($column, $value = null) :self
+    public function where($field, $operator = null, $value = null, $boolean = 'and', $not = false, $filter = false) :self
+    public function orWhere($field, $operator = null, $value = null) :self
+    public function whereNot($field, $value = null) :self
+    public function orWhereNot($field, $value = null) :self
     
     ->where('id',1)
     ->where('id','=',1)
@@ -61,12 +61,21 @@ composer require jfxy/elasticsearch-query-builder
     })
 ```
 
+#### filter
+* 用法同where一致，不过条件会写在filter下
+```php
+    public function filter($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    public function orFilter($field, $operator = null, $value = null) :self
+    public function filterNot($field, $value = null) :self
+    public function orFilterNot($field, $value = null) :self
+```
+
 #### in
 ```php
-    public function whereIn($column, array $value, $boolean = 'and', $not = false) :self
-    public function whereNotIn($column, array $value, $boolean = 'and') :self
-    public function orWhereIn($column, array $value) :self
-    public function orWhereNotIn($column, array $value) :self
+    public function whereIn($field, array $value, $boolean = 'and', $not = false) :self
+    public function whereNotIn($field, array $value, $boolean = 'and') :self
+    public function orWhereIn($field, array $value) :self
+    public function orWhereNotIn($field, array $value) :self
     
     ->whereIn('id',[1,2])
 ```
@@ -74,10 +83,10 @@ composer require jfxy/elasticsearch-query-builder
 #### between
 * 默认为闭区间，比较运算符支持 **>,>=,<,<=**
 ```php
-    public function whereBetween($column, array $value, $boolean = 'and', $not = false) :self
-    public function whereNotBetween($column, array $value, $boolean = 'and') :self
-    public function orWhereBetween($column, array $value) :self
-    public function orWhereNotBetween($column, array $value) :self
+    public function whereBetween($field, array $value, $boolean = 'and', $not = false) :self
+    public function whereNotBetween($field, array $value, $boolean = 'and') :self
+    public function orWhereBetween($field, array $value) :self
+    public function orWhereNotBetween($field, array $value) :self
     
     ->whereBetween('id',[1,10])                     // 1 <= id <= 10
     ->whereBetween('id',[1,'<' => 10])              // 1 <= id < 10
@@ -87,10 +96,10 @@ composer require jfxy/elasticsearch-query-builder
 #### exists
 * 字段不存在或为null
 ```php
-    public function whereExists($column,$boolean = 'and', $not = false) :self
-    public function whereNotExists($column) :self
-    public function orWhereExists($column) :self
-    public function orWhereNotExists($column) :self
+    public function whereExists($field,$boolean = 'and', $not = false) :self
+    public function whereNotExists($field) :self
+    public function orWhereExists($field) :self
+    public function orWhereNotExists($field) :self
     
     ->whereExists('news_uuid')
 ```
@@ -169,15 +178,15 @@ composer require jfxy/elasticsearch-query-builder
 * whereMultiMatch方法，$type=best_fields、most_fields、cross_fields、phrase、phrase_prefix
 ```php
     // 单字段
-    public function whereMatch($column, $value = null,$type = 'match',array $appendParams = [], $boolean = 'and', $not = false) :self
-    public function orWhereMatch($column, $value = null,$type = 'match',array $appendParams = []) :self
-    public function whereNotMatch($column, $value = null,$type = 'match',array $appendParams = []) :self
-    public function orWhereNotMatch($column, $value = null,$type = 'match',array $appendParams = []) :self
+    public function whereMatch($field, $value = null,$type = 'match',array $appendParams = [], $boolean = 'and', $not = false) :self
+    public function orWhereMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
+    public function whereNotMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
+    public function orWhereNotMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
     // 多字段
-    public function whereMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = [], $boolean = 'and', $not = false) :self
-    public function orWhereMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = []) :self
-    public function whereNotMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = []) :self
-    public function orWhereNotMultiMatch($column, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function whereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = [], $boolean = 'and', $not = false) :self
+    public function orWhereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function whereNotMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function orWhereNotMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
     
     ->whereMatch('news_title','上海','match_phrase',['slop'=>1])
     ->whereMultiMatch(['news_title','news_content'],'上海','phrase',["operator" => "OR"])
@@ -198,6 +207,18 @@ composer require jfxy/elasticsearch-query-builder
         $query->where('aa',1)->orWhere('bb',1)->orWhere('cc',1)
             ->minimumShouldMatch('50%');
     })
+```
+
+#### whereNested nested类型字段查询
+* 仅支持传入闭包和数组条件
+```php
+    public function whereNested($path,$wheres,$appendParams = []) :self
+    
+    ->whereNested('skus',function(Es $query){
+        $query->where('skus.title','iphone')->where('skus.des','iphone');
+    },['inner_hits'=>['highlight' => ['fields'=>['skus.title'=>new \stdClass()]]]]);
+    
+    ->whereNested('skus',['skus.title' => 'iphone','skus.description' => 'iphone',['skus.price','>','100']],['inner_hits'=>['highlight' => ['fields'=>['skus.title'=>new \stdClass()]]]]);
 ```
 
 #### postWhere 后置过滤器
