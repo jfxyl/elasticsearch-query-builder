@@ -1,5 +1,6 @@
 <?php
-namespace Jfxy\ElasticSearch;
+
+namespace Jfxy\ElasticsearchQuery;
 
 use Closure;
 use Exception;
@@ -64,7 +65,7 @@ abstract class Builder
      * @param $fields
      * @return $this
      */
-    public function select($fields) :self
+    public function select($fields): self
     {
         $this->fields = is_array($fields) ? $fields : func_get_args();
         return $this;
@@ -80,7 +81,7 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function where($field, $operator = null, $value = null, $boolean = 'and', $not = false, $filter = false) :self
+    public function where($field, $operator = null, $value = null, $boolean = 'and', $not = false, $filter = false): self
     {
         if (is_array($field)) {
             return $this->addArrayOfWheres($field, $boolean, $not, $filter);
@@ -93,15 +94,15 @@ abstract class Builder
             $value, $operator, func_num_args() === 2
         );
 
-        if(in_array($operator,['!=','<>'])){
+        if (in_array($operator, ['!=', '<>'])) {
             $not = !$not;
         }
 
-        if(is_array($value)){
+        if (is_array($value)) {
             return $this->whereIn($field, $value, $boolean, $not, $filter);
         }
 
-        if(in_array($operator,['>','<','>=','<='])){
+        if (in_array($operator, ['>', '<', '>=', '<='])) {
             $value = [$operator => $value];
             return $this->whereBetween($field, $value, $boolean, $not, $filter);
         }
@@ -121,12 +122,12 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function orWhere($field, $operator = null, $value = null) :self
+    public function orWhere($field, $operator = null, $value = null): self
     {
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
-        return $this->where($field, $operator, $value,'or');
+        return $this->where($field, $operator, $value, 'or');
     }
 
 
@@ -136,12 +137,12 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function whereNot($field, $operator = null, $value = null) :self
+    public function whereNot($field, $operator = null, $value = null): self
     {
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
-        return $this->where($field, $operator, $value,'and',true);
+        return $this->where($field, $operator, $value, 'and', true);
     }
 
     /**
@@ -150,12 +151,12 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function orWhereNot($field, $operator = null, $value = null) :self
+    public function orWhereNot($field, $operator = null, $value = null): self
     {
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
-        return $this->where($field, $operator, $value,'or',true);
+        return $this->where($field, $operator, $value, 'or', true);
     }
 
     /**
@@ -166,12 +167,12 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function filter($field, $operator = null, $value = null, $boolean = 'and',$not = false) :self
+    public function filter($field, $operator = null, $value = null, $boolean = 'and', $not = false): self
     {
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
-        return $this->where($field, $operator, $value, $boolean,$not,true);
+        return $this->where($field, $operator, $value, $boolean, $not, true);
     }
 
     /**
@@ -180,7 +181,7 @@ abstract class Builder
      * @param null $value
      * @return $this
      */
-    public function orFilter($field, $operator = null, $value = null) :self
+    public function orFilter($field, $operator = null, $value = null): self
     {
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
@@ -194,12 +195,12 @@ abstract class Builder
      * @param null $value
      * @return $this
      */
-    public function filterNot($field, $operator = null, $value = null) :self
+    public function filterNot($field, $operator = null, $value = null): self
     {
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
-        return $this->filter($field, $operator, $value, 'and',true);
+        return $this->filter($field, $operator, $value, 'and', true);
     }
 
     /**
@@ -208,25 +209,25 @@ abstract class Builder
      * @param null $value
      * @return $this
      */
-    public function orFilterNot($field, $operator = null, $value = null) :self
+    public function orFilterNot($field, $operator = null, $value = null): self
     {
         [$value, $operator] = $this->prepareValueAndOperator(
             $value, $operator, func_num_args() === 2
         );
-        return $this->filter($field, $operator, $value, 'or',true);
+        return $this->filter($field, $operator, $value, 'or', true);
     }
 
     /**
      * 单字段查询
      * @param $field
      * @param null $value
-     * @param string $type          match|match_phrase|match_phrase_prefix
+     * @param string $type match|match_phrase|match_phrase_prefix
      * @param array $appendParams
      * @param string $boolean
      * @param bool $not
      * @return $this
      */
-    public function whereMatch($field, $value = null,$type = 'match',array $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
+    public function whereMatch($field, $value = null, $type = 'match', array $appendParams = [], $boolean = 'and', $not = false, $filter = false): self
     {
         $this->wheres[] = compact(
             'type', 'field', 'value', 'appendParams', 'boolean', 'not', 'filter'
@@ -241,9 +242,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
+    public function orWhereMatch($field, $value = null, $type = 'match', array $appendParams = [], $filter = false): self
     {
-        return $this->whereMatch($field, $value, $type, $appendParams, 'or', false);
+        return $this->whereMatch($field, $value, $type, $appendParams, 'or', false, $filter);
     }
 
     /**
@@ -253,9 +254,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function whereNotMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
+    public function whereNotMatch($field, $value = null, $type = 'match', array $appendParams = [], $filter = false): self
     {
-        return $this->whereMatch($field, $value, $type, $appendParams, 'and', true);
+        return $this->whereMatch($field, $value, $type, $appendParams, 'and', true, $filter);
     }
 
     /**
@@ -265,24 +266,24 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereNotMatch($field, $value = null,$type = 'match',array $appendParams = []) :self
+    public function orWhereNotMatch($field, $value = null, $type = 'match', array $appendParams = [], $filter = false): self
     {
-        return $this->whereMatch($field, $value, $type, $appendParams, 'or', true);
+        return $this->whereMatch($field, $value, $type, $appendParams, 'or', true, $filter);
     }
 
     /**
      * 多字段查询
      * @param $field
      * @param null $value
-     * @param string $type          best_fields|most_fields|cross_fields|phrase|phrase_prefix
+     * @param string $type best_fields|most_fields|cross_fields|phrase|phrase_prefix
      * @param array $appendParams
      * @param string $boolean
      * @param bool $not
      * @return $this
      */
-    public function whereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
+    public function whereMultiMatch($field, $value = null, $type = 'best_fields', array $appendParams = [], $boolean = 'and', $not = false, $filter = false): self
     {
-        [$type,$matchType] = ['multi_match',$type];
+        [$type, $matchType] = ['multi_match', $type];
         $this->wheres[] = compact(
             'type', 'field', 'value', 'matchType', 'appendParams', 'boolean', 'not', 'filter'
         );
@@ -296,9 +297,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function orWhereMultiMatch($field, $value = null, $type = 'best_fields', array $appendParams = [], $filter = false): self
     {
-        return $this->whereMultiMatch($field, $value, $type, $appendParams, 'or', false);
+        return $this->whereMultiMatch($field, $value, $type, $appendParams, 'or', false, $filter);
     }
 
     /**
@@ -308,9 +309,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function whereNotMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function whereNotMultiMatch($field, $value = null, $type = 'best_fields', array $appendParams = [], $filter = false): self
     {
-        return $this->whereMultiMatch($field, $value, $type, $appendParams, 'and', true);
+        return $this->whereMultiMatch($field, $value, $type, $appendParams, 'and', true, $filter);
     }
 
     /**
@@ -320,9 +321,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereNotMultiMatch($field, $value = null,$type = 'best_fields',array $appendParams = []) :self
+    public function orWhereNotMultiMatch($field, $value = null, $type = 'best_fields', array $appendParams = [], $filter = false): self
     {
-        return $this->whereMultiMatch($field, $value, $type, $appendParams, 'or', true);
+        return $this->whereMultiMatch($field, $value, $type, $appendParams, 'or', true, $filter);
     }
 
     /**
@@ -332,7 +333,7 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereIn($field, array $value, $boolean = 'and', $not = false, $filter = false) :self
+    public function whereIn($field, array $value, $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'in';
         $this->wheres[] = compact('type', 'field', 'value', 'boolean', 'not', 'filter');
@@ -344,9 +345,9 @@ abstract class Builder
      * @param array $value
      * @return $this
      */
-    public function whereNotIn($field, array $value) :self
+    public function whereNotIn($field, array $value, $filter = false): self
     {
-        return $this->whereIn($field, $value, 'and', true);
+        return $this->whereIn($field, $value, 'and', true, $filter);
     }
 
     /**
@@ -354,9 +355,9 @@ abstract class Builder
      * @param array $value
      * @return $this
      */
-    public function orWhereIn($field, array $value) :self
+    public function orWhereIn($field, array $value, $filter = false): self
     {
-        return $this->whereIn($field, $value, 'or');
+        return $this->whereIn($field, $value, 'or', false, $filter);
     }
 
     /**
@@ -364,9 +365,9 @@ abstract class Builder
      * @param array $value
      * @return $this
      */
-    public function orWhereNotIn($field, array $value) :self
+    public function orWhereNotIn($field, array $value, $filter = false): self
     {
-        return $this->whereNotIn($field, $value,'or');
+        return $this->whereIn($field, $value, 'or', true, $filter);
     }
 
     /**
@@ -376,10 +377,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereBetween($field, array $value, $boolean = 'and', $not = false, $filter = false) :self
+    public function whereBetween($field, array $value, $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'between';
-        $this->wheres[] = compact('type','field','value','boolean','not','filter');
+        $this->wheres[] = compact('type', 'field', 'value', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -388,9 +389,9 @@ abstract class Builder
      * @param array $value
      * @return $this
      */
-    public function whereNotBetween($field, array $value) :self
+    public function whereNotBetween($field, array $value, $filter = false): self
     {
-        return $this->whereBetween($field, $value, 'and', true);
+        return $this->whereBetween($field, $value, 'and', true, $filter);
     }
 
     /**
@@ -398,9 +399,9 @@ abstract class Builder
      * @param array $value
      * @return $this
      */
-    public function orWhereBetween($field, array $value) :self
+    public function orWhereBetween($field, array $value, $filter = false): self
     {
-        return $this->whereBetween($field, $value, 'or');
+        return $this->whereBetween($field, $value, 'or', false, $filter);
     }
 
     /**
@@ -408,9 +409,9 @@ abstract class Builder
      * @param array $value
      * @return $this
      */
-    public function orWhereNotBetween($field, array $value) :self
+    public function orWhereNotBetween($field, array $value, $filter = false): self
     {
-        return $this->whereBetween($field, $value, 'or', true);
+        return $this->whereBetween($field, $value, 'or', true, $filter);
     }
 
     /**
@@ -419,10 +420,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereExists($field,$boolean = 'and', $not = false, $filter = false) :self
+    public function whereExists($field, $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'exists';
-        $this->wheres[] = compact('type','field', 'boolean', 'not', 'filter');
+        $this->wheres[] = compact('type', 'field', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -430,27 +431,27 @@ abstract class Builder
      * @param $field
      * @return $this
      */
-    public function whereNotExists($field) :self
+    public function whereNotExists($field, $filter = false): self
     {
-        return $this->whereExists($field,'and',true);
+        return $this->whereExists($field, 'and', true, $filter);
     }
 
     /**
      * @param $field
      * @return $this
      */
-    public function orWhereExists($field) :self
+    public function orWhereExists($field, $filter = false): self
     {
-        return $this->whereExists($field,'or');
+        return $this->whereExists($field, 'or', false, $filter);
     }
 
     /**
      * @param $field
      * @return $this
      */
-    public function orWhereNotExists($field) :self
+    public function orWhereNotExists($field, $filter = false): self
     {
-        return $this->whereExists($field,'or',true);
+        return $this->whereExists($field, 'or', true, $filter);
     }
 
     /**
@@ -461,10 +462,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function wherePrefix($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
+    public function wherePrefix($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'prefix';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
+        $this->wheres[] = compact('type', 'field', 'value', 'appendParams', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -474,9 +475,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function whereNotPrefix($field, $value, $appendParams = []) :self
+    public function whereNotPrefix($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->wherePrefix($field, $value, $appendParams,'and',true);
+        return $this->wherePrefix($field, $value, $appendParams, 'and', true, $filter);
     }
 
     /**
@@ -485,9 +486,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWherePrefix($field, $value, $appendParams = []) :self
+    public function orWherePrefix($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->wherePrefix($field, $value, $appendParams,'or');
+        return $this->wherePrefix($field, $value, $appendParams, 'or', false, $filter);
     }
 
     /**
@@ -496,9 +497,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereNotPrefix($field, $value, $appendParams = []) :self
+    public function orWhereNotPrefix($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->wherePrefix($field, $value, $appendParams,'or',true);
+        return $this->wherePrefix($field, $value, $appendParams, 'or', true, $filter);
     }
 
     /**
@@ -509,10 +510,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereWildcard($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
+    public function whereWildcard($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'wildcard';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
+        $this->wheres[] = compact('type', 'field', 'value', 'appendParams', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -522,9 +523,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function whereNotWildcard($field, $value, $appendParams = []) :self
+    public function whereNotWildcard($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereWildcard($field, $value, $appendParams,'and',true);
+        return $this->whereWildcard($field, $value, $appendParams, 'and', true, $filter);
     }
 
     /**
@@ -533,9 +534,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereWildcard($field, $value, $appendParams = []) :self
+    public function orWhereWildcard($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereWildcard($field, $value, $appendParams,'or');
+        return $this->whereWildcard($field, $value, $appendParams, 'or', false, $filter);
     }
 
     /**
@@ -544,9 +545,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereNotWildcard($field, $value, $appendParams = []) :self
+    public function orWhereNotWildcard($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereWildcard($field, $value, $appendParams,'or',true);
+        return $this->whereWildcard($field, $value, $appendParams, 'or', true, $filter);
     }
 
     /**
@@ -557,10 +558,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereRegexp($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
+    public function whereRegexp($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'regexp';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
+        $this->wheres[] = compact('type', 'field', 'value', 'appendParams', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -570,9 +571,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function whereNotRegexp($field, $value, $appendParams = []) :self
+    public function whereNotRegexp($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereRegexp($field, $value, $appendParams,'and',true);
+        return $this->whereRegexp($field, $value, $appendParams, 'and', true, $filter);
     }
 
     /**
@@ -581,9 +582,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereRegexp($field, $value, $appendParams = []) :self
+    public function orWhereRegexp($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereRegexp($field, $value, $appendParams,'or');
+        return $this->whereRegexp($field, $value, $appendParams, 'or', false, $filter);
     }
 
     /**
@@ -592,9 +593,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereNotRegexp($field, $value, $appendParams = []) :self
+    public function orWhereNotRegexp($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereRegexp($field, $value, $appendParams,'or',true);
+        return $this->whereRegexp($field, $value, $appendParams, 'or', true, $filter);
     }
 
 
@@ -606,10 +607,10 @@ abstract class Builder
      * @param bool $not
      * @return $this
      */
-    public function whereFuzzy($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false) :self
+    public function whereFuzzy($field, $value, $appendParams = [], $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'fuzzy';
-        $this->wheres[] = compact('type','field','value','appendParams','boolean','not','filter');
+        $this->wheres[] = compact('type', 'field', 'value', 'appendParams', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -619,9 +620,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function whereNotFuzzy($field, $value, $appendParams = []) :self
+    public function whereNotFuzzy($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereFuzzy($field, $value, $appendParams,'and',true);
+        return $this->whereFuzzy($field, $value, $appendParams, 'and', true, $filter);
     }
 
     /**
@@ -630,9 +631,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereFuzzy($field, $value, $appendParams = []) :self
+    public function orWhereFuzzy($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereFuzzy($field, $value, $appendParams,'or');
+        return $this->whereFuzzy($field, $value, $appendParams, 'or', false, $filter);
     }
 
     /**
@@ -641,9 +642,9 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function orWhereNotFuzzy($field, $value, $appendParams = []) :self
+    public function orWhereNotFuzzy($field, $value, $appendParams = [], $filter = false): self
     {
-        return $this->whereFuzzy($field, $value, $appendParams,'or',true);
+        return $this->whereFuzzy($field, $value, $appendParams, 'or', true, $filter);
     }
 
     /**
@@ -654,17 +655,16 @@ abstract class Builder
      * @return $this
      * @throws Exception
      */
-    public function whereNested($path,$wheres,$appendParams = []) :self
+    public function whereNested($path, $wheres, $appendParams = [], $filter = false): self
     {
-        if(!($wheres instanceof Closure) && !is_array($wheres)){
+        if (!($wheres instanceof Closure) && !is_array($wheres)) {
             throw new Exception('非法参数');
         }
         $type = 'nested';
         $boolean = 'and';
         $not = false;
-        $filter = false;
         $query = $this->newQuery()->where($wheres);
-        $this->wheres[] = compact('type','path', 'query', 'appendParams', 'boolean', 'not', 'filter');
+        $this->wheres[] = compact('type', 'path', 'query', 'appendParams', 'boolean', 'not', 'filter');
         return $this;
     }
 
@@ -672,23 +672,24 @@ abstract class Builder
      * @param $where
      * @param string $boolean
      * @param bool $not
-     * @return Builder
+     * @param bool $filter
+     * @return $this
      */
-    public function whereRaw($where, $boolean = 'and', $not = false, $filter = false) :self
+    public function whereRaw($where, $boolean = 'and', $not = false, $filter = false): self
     {
         $type = 'raw';
-        $where = is_string($where) ? json_decode($where,true) : $where;
-        $this->wheres[] = compact('type','where','boolean','not','filter');
+        $where = is_string($where) ? json_decode($where, true) : $where;
+        $this->wheres[] = compact('type', 'where', 'boolean', 'not', 'filter');
         return $this;
     }
 
     /**
      * @param $where
-     * @return Builder
+     * @return $this
      */
-    public function orWhereRaw($where) :self
+    public function orWhereRaw($where, $filter = false): self
     {
-        return $this->whereRaw($where, 'or');
+        return $this->whereRaw($where, 'or', false, $filter);
     }
 
     /**
@@ -698,29 +699,29 @@ abstract class Builder
      * @param null $value
      * @param string $boolean
      * @param bool $not
-     * @return Builder
+     * @return $this
      * @throws Exception
      */
-    public function postWhere($field, $operator = null, $value = null, $boolean = 'and',$not = false, $filter = false) :self
+    public function postWhere($field, $operator = null, $value = null, $boolean = 'and', $not = false, $filter = false): self
     {
         $query = $this->newQuery()->where(...func_get_args());
         $this->postWheres = is_array($this->postWheres) ? $this->postWheres : [];
-        array_push($this->postWheres,...$query->wheres);
+        array_push($this->postWheres, ...$query->wheres);
         return $this;
     }
 
     /**
-     * @param  mixed  $value
-     * @param  callable  $callback
-     * @param  callable|null  $default
+     * @param  mixed $value
+     * @param  callable $callback
+     * @param  callable|null $default
      * @return mixed|$this
      */
-    public function when($value,$callback,$default = null) :self
+    public function when($value, $callback, $default = null): self
     {
-        if($value){
-            return $callback($this,$value)?:$this;
+        if ($value) {
+            return $callback($this, $value) ?: $this;
         } elseif ($default) {
-            return $default($this,$value)?:$this;
+            return $default($this, $value) ?: $this;
         }
         return $this;
     }
@@ -730,12 +731,12 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function collapse(string $field,array $appendParams = []) :self
+    public function collapse(string $field, array $appendParams = []): self
     {
-        if(empty($appendParams)){
+        if (empty($appendParams)) {
             $this->collapse = $field;
-        }else{
-            $this->collapse = array_merge(['field' => $field],$appendParams);
+        } else {
+            $this->collapse = array_merge(['field' => $field], $appendParams);
         }
         return $this;
     }
@@ -744,7 +745,7 @@ abstract class Builder
      * @param int $value
      * @return $this
      */
-    public function from(int $value) :self
+    public function from(int $value): self
     {
         $this->from = $value;
         return $this;
@@ -754,7 +755,7 @@ abstract class Builder
      * @param int $value
      * @return $this
      */
-    public function size(int $value) :self
+    public function size(int $value): self
     {
         $this->size = $value;
         return $this;
@@ -765,7 +766,7 @@ abstract class Builder
      * @param string $sort
      * @return $this
      */
-    public function orderBy(string $field, $sort = 'asc') :self
+    public function orderBy(string $field, $sort = 'asc'): self
     {
         $this->orders[$field] = $sort;
         return $this;
@@ -781,7 +782,7 @@ abstract class Builder
      * ]
      * @return $this
      */
-    public function highlight(string $field,array $params = []) :self
+    public function highlight(string $field, array $params = []): self
     {
         $this->highlight[$field] = $params;
         return $this;
@@ -799,9 +800,9 @@ abstract class Builder
      * ]
      * @return $this
      */
-    public function highlightConfig(array $config = []) :self
+    public function highlightConfig(array $config = []): self
     {
-        $this->highlightConfig = array_merge($this->highlightConfig,$config);
+        $this->highlightConfig = array_merge($this->highlightConfig, $config);
         return $this;
     }
 
@@ -809,7 +810,7 @@ abstract class Builder
      * @param $value
      * @return $this
      */
-    public function minimumShouldMatch($value) :self
+    public function minimumShouldMatch($value): self
     {
         $this->minimumShouldMatch = $value;
         return $this;
@@ -819,7 +820,7 @@ abstract class Builder
      * @param string $scroll
      * @return $this
      */
-    public function scroll($scroll = '2m') :self
+    public function scroll($scroll = '2m'): self
     {
         $this->scroll = $scroll;
         return $this;
@@ -829,9 +830,9 @@ abstract class Builder
      * @param string $scrollId
      * @return $this
      */
-    public function scrollId(string $scrollId) :self
+    public function scrollId(string $scrollId): self
     {
-        if(empty($this->scroll)){
+        if (empty($this->scroll)) {
             $this->scroll();
         }
         $this->scrollId = $scrollId;
@@ -840,20 +841,20 @@ abstract class Builder
 
     /**
      * @param string $field
-     * @param string $type  常用聚合[terms,histogram,date_histogram,date_range,range,cardinality,avg,sum,min,max,extended_stats...]
-     * @param array $appendParams  聚合需要携带的参数，聚合不同参数不同，部分聚合必须传入，比如date_histogram需传入[interval=>day,hour...]
+     * @param string $type 常用聚合[terms,histogram,date_histogram,date_range,range,cardinality,avg,sum,min,max,extended_stats...]
+     * @param array $appendParams 聚合需要携带的参数，聚合不同参数不同，部分聚合必须传入，比如date_histogram需传入[interval=>day,hour...]
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function aggs(string $alias,string $type = 'terms',$params = [], ... $subGroups) :self
+    public function aggs(string $alias, string $type = 'terms', $params = [], ... $subGroups): self
     {
         $aggs = [
             'type' => $type,
             'alias' => $alias,
             'params' => $params,
         ];
-        foreach($subGroups as $subGroup){
-            call_user_func($subGroup,$query = $this->newQuery());
+        foreach ($subGroups as $subGroup) {
+            call_user_func($subGroup, $query = $this->newQuery());
             $aggs['subGroups'][] = $query;
         }
         $this->aggs[] = $aggs;
@@ -863,7 +864,7 @@ abstract class Builder
     /**
      * terms 聚合
      * @param string $field
-     * @param array $appendParams  聚合需要携带的参数
+     * @param array $appendParams 聚合需要携带的参数
      *      [
      *          'size' => 10,                   // 默认
      *          'order' => ['_count'=>'desc']   // 默认
@@ -875,32 +876,32 @@ abstract class Builder
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function groupBy(string $field, array $appendParams = [], ... $subGroups) :self
+    public function groupBy(string $field, array $appendParams = [], ... $subGroups): self
     {
-        $alias = $field.'_terms';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'terms',$params, ... $subGroups);
+        $alias = $field . '_terms';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'terms', $params, ... $subGroups);
     }
 
     /**
      * date_histogram 聚合
      * @param string $field
-     * @param string $interval  [year,quarter,month,week,day,hour,minute,second,1.5h,1M...]
-     * @param string $format    年月日时分秒的表示方式 [yyyy-MM-dd HH:mm:ss]
+     * @param string $interval [year,quarter,month,week,day,hour,minute,second,1.5h,1M...]
+     * @param string $format 年月日时分秒的表示方式 [yyyy-MM-dd HH:mm:ss]
      * @param array $appendParams
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function dateGroupBy(string $field,string $interval = 'day',string $format = "yyyy-MM-dd",array $appendParams = [], ... $subGroups) :self
+    public function dateGroupBy(string $field, string $interval = 'day', string $format = "yyyy-MM-dd", array $appendParams = [], ... $subGroups): self
     {
-        $alias = $field.'_date_histogram';
+        $alias = $field . '_date_histogram';
         $params = array_merge([
             'field' => $field,
             'interval' => $interval,
             'format' => $format,
             'min_doc_count' => 0,
-        ],$appendParams);
-        return $this->aggs($alias,'date_histogram',$params, ... $subGroups);
+        ], $appendParams);
+        return $this->aggs($alias, 'date_histogram', $params, ... $subGroups);
     }
 
     /**
@@ -908,11 +909,11 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function cardinality(string $field,array $appendParams = []) :self
+    public function cardinality(string $field, array $appendParams = []): self
     {
-        $alias = $field.'_cardinality';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'cardinality',$params);
+        $alias = $field . '_cardinality';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'cardinality', $params);
     }
 
     /**
@@ -920,11 +921,11 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function avg(string $field,array $appendParams = []) :self
+    public function avg(string $field, array $appendParams = []): self
     {
-        $alias = $field.'_avg';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'avg',$params);
+        $alias = $field . '_avg';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'avg', $params);
     }
 
     /**
@@ -932,11 +933,11 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function sum(string $field,array $appendParams = []) :self
+    public function sum(string $field, array $appendParams = []): self
     {
-        $alias = $field.'_sum';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'sum',$params);
+        $alias = $field . '_sum';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'sum', $params);
     }
 
     /**
@@ -944,11 +945,11 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function min(string $field,array $appendParams = []) :self
+    public function min(string $field, array $appendParams = []): self
     {
-        $alias = $field.'_min';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'min',$params);
+        $alias = $field . '_min';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'min', $params);
     }
 
     /**
@@ -956,11 +957,11 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function max(string $field,array $appendParams = []) :self
+    public function max(string $field, array $appendParams = []): self
     {
-        $alias = $field.'_max';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'max',$params);
+        $alias = $field . '_max';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'max', $params);
     }
 
     /**
@@ -968,11 +969,11 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function stats(string $field,array $appendParams = []) :self
+    public function stats(string $field, array $appendParams = []): self
     {
-        $alias = $field.'_stats';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'stats',$params);
+        $alias = $field . '_stats';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'stats', $params);
     }
 
     /**
@@ -980,11 +981,11 @@ abstract class Builder
      * @param array $appendParams
      * @return $this
      */
-    public function extendedStats(string $field,array $appendParams = []) :self
+    public function extendedStats(string $field, array $appendParams = []): self
     {
-        $alias = $field.'_extended_stats';
-        $params = array_merge(['field' => $field],$appendParams);
-        return $this->aggs($alias,'extended_stats',$params);
+        $alias = $field . '_extended_stats';
+        $params = array_merge(['field' => $field], $appendParams);
+        return $this->aggs($alias, 'extended_stats', $params);
     }
 
     /**
@@ -998,9 +999,9 @@ abstract class Builder
      * ]
      * @return $this
      */
-    public function topHits(array $params = []) :self
+    public function topHits(array $params = []): self
     {
-        return $this->aggs('top_hits','top_hits',$params);
+        return $this->aggs('top_hits', 'top_hits', $params);
     }
 
     /**
@@ -1010,12 +1011,12 @@ abstract class Builder
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function aggsFilter(string $alias,$wheres,... $subGroups) :self
+    public function aggsFilter(string $alias, $wheres, ... $subGroups): self
     {
-        return $this->aggs($alias,'filter',$this->newQuery()->where($wheres), ... $subGroups);
+        return $this->aggs($alias, 'filter', $this->newQuery()->where($wheres), ... $subGroups);
     }
 
-    protected function addArrayOfWheres($field, $boolean = 'and',$not = false,$filter = false)
+    protected function addArrayOfWheres($field, $boolean = 'and', $not = false, $filter = false)
     {
         return $this->nestedQuery(function (self $query) use ($field, $not, $filter) {
             foreach ($field as $key => $value) {
@@ -1028,7 +1029,7 @@ abstract class Builder
         }, $boolean, $not, $filter);
     }
 
-    protected function nestedQuery(Closure $callback, $boolean = 'and',$not = false, $filter = false) :self
+    protected function nestedQuery(Closure $callback, $boolean = 'and', $not = false, $filter = false): self
     {
         call_user_func($callback, $query = $this->newQuery());
         if (count($query->wheres)) {
@@ -1049,7 +1050,7 @@ abstract class Builder
             return [$operator, '='];
         } elseif (is_null($value) && in_array($operator, $this->operators)) {
             throw new Exception('非法运算符和值组合');
-        } elseif (is_array($value) && !in_array($operator, ['=','!=','<>'])) {
+        } elseif (is_array($value) && !in_array($operator, ['=', '!=', '<>'])) {
             throw new Exception('非法运算符和值组合');
         }
         return [$value, $operator];
@@ -1073,11 +1074,11 @@ abstract class Builder
      */
     public function dsl($type = 'array')
     {
-        if(empty($this->dsl)){
+        if (empty($this->dsl)) {
             $this->dsl = $this->grammar->compileComponents($this);
         }
-        if(!is_string($this->dsl) && $type == 'json'){
-            $this->dsl =  json_encode($this->dsl,JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT);
+        if (!is_string($this->dsl) && $type == 'json') {
+            $this->dsl = json_encode($this->dsl, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         }
         return $this->dsl;
     }
@@ -1090,32 +1091,32 @@ abstract class Builder
     public function get($directReturn = false)
     {
         $this->runQuery();
-        if($directReturn){
+        if ($directReturn) {
             return $this->response;
         }
-        try{
-            $list = array_map(function($hit){
+        try {
+            $list = array_map(function ($hit) {
                 return $this->decorate(array_merge([
                     '_index' => $hit['_index'],
                     '_type' => $hit['_type'],
                     '_id' => $hit['_id'],
                     '_score' => $hit['_score']
-                ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
-            },$this->response['hits']['hits']);
+                ], $hit['_source'], isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
+            }, $this->response['hits']['hits']);
             $data = [
                 'total' => $this->response['hits']['total'],
                 'list' => $list
             ];
-            if(isset($this->response['aggregations'])){
+            if (isset($this->response['aggregations'])) {
                 $data['aggs'] = $this->response['aggregations'];
                 //$data['aggs'] = $this->handleAgg($this,$this->response['aggregations']);
             }
-            if(isset($this->response['_scroll_id'])){
+            if (isset($this->response['_scroll_id'])) {
                 $data['scroll_id'] = $this->response['_scroll_id'];
             }
             return $data;
-        }catch(\Exception $e){
-            throw new Exception('数据解析错误-'.$e->getMessage());
+        } catch (\Exception $e) {
+            throw new Exception('数据解析错误-' . $e->getMessage());
         }
     }
 
@@ -1133,7 +1134,7 @@ abstract class Builder
 
         $this->size($size);
 
-        if(!empty($this->collapse)){
+        if (!empty($this->collapse)) {
             $collapseField = is_string($this->collapse) ? $this->collapse : $this->collapse['field'];
             $this->cardinality($collapseField);
         }
@@ -1160,12 +1161,12 @@ abstract class Builder
                 'last_page' => $maxPage,
                 'list' => $list
             ];
-            if(isset($this->response['aggregations'])){
+            if (isset($this->response['aggregations'])) {
                 $data['aggs'] = $this->response['aggregations'];
             }
             return $data;
-        }catch(\Exception $e){
-            throw new Exception('数据解析错误-'.$e->getMessage());
+        } catch (\Exception $e) {
+            throw new Exception('数据解析错误-' . $e->getMessage());
         }
     }
 
@@ -1177,18 +1178,18 @@ abstract class Builder
     {
         $this->size(1);
         $this->runQuery();
-        if($directReturn){
+        if ($directReturn) {
             return $this->response;
         }
         $data = null;
-        if(isset($this->response['hits']['hits'][0])){
+        if (isset($this->response['hits']['hits'][0])) {
             $hit = $this->response['hits']['hits'][0];
             $data = $this->decorate(array_merge([
                 '_index' => $hit['_index'],
                 '_type' => $hit['_type'],
                 '_id' => $hit['_id'],
                 '_score' => $hit['_score']
-            ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
+            ], $hit['_source'], isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []));
         }
         return $data;
     }
@@ -1211,27 +1212,27 @@ abstract class Builder
      * @param $aggsResponse
      * @return array
      */
-    protected function handleAgg(Builder $builder,$aggsResponse)
+    protected function handleAgg(Builder $builder, $aggsResponse)
     {
         $result = [];
-        if(empty($builder->aggs)){
+        if (empty($builder->aggs)) {
             return $aggsResponse;
         }
-        foreach($builder->aggs as $agg){
+        foreach ($builder->aggs as $agg) {
             $item = [];
             $key = $agg['alias'];
-            if(isset($aggsResponse[$key])){
-                switch($agg['type']){
+            if (isset($aggsResponse[$key])) {
+                switch ($agg['type']) {
                     case 'terms':
                     case 'histogram':
                     case 'date_histogram':
                     case 'date_range':
                     case 'range':
                         $buckets = $aggsResponse[$key]['buckets'];
-                        if(!empty($agg['subGroups'])){
-                            foreach($agg['subGroups'] as $subGroup){
-                                foreach($buckets as $k => $bucket){
-                                    $buckets[$k] = array_merge($bucket,$this->handleAgg($subGroup,$bucket));
+                        if (!empty($agg['subGroups'])) {
+                            foreach ($agg['subGroups'] as $subGroup) {
+                                foreach ($buckets as $k => $bucket) {
+                                    $buckets[$k] = array_merge($bucket, $this->handleAgg($subGroup, $bucket));
                                 }
                             }
                         }
@@ -1239,9 +1240,9 @@ abstract class Builder
                         break;
                     case 'filter':
                         $item['doc_count'] = $aggsResponse[$key]['doc_count'];
-                        if(!empty($agg['subGroups'])){
-                            foreach($agg['subGroups'] as $subGroup){
-                                $item = array_merge($item,$this->handleAgg($subGroup,$aggsResponse[$key]));
+                        if (!empty($agg['subGroups'])) {
+                            foreach ($agg['subGroups'] as $subGroup) {
+                                $item = array_merge($item, $this->handleAgg($subGroup, $aggsResponse[$key]));
                             }
                         }
                         break;
@@ -1257,14 +1258,14 @@ abstract class Builder
                         $item = $aggsResponse[$key];
                         break;
                     case 'top_hits':
-                        $item = array_map(function($hit){
+                        $item = array_map(function ($hit) {
                             return array_merge([
                                 '_index' => $hit['_index'],
                                 '_type' => $hit['_type'],
                                 '_id' => $hit['_id'],
                                 '_score' => $hit['_score']
-                            ],$hit['_source'],isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []);
-                        },$aggsResponse[$key]['hits']['hits']);
+                            ], $hit['_source'], isset($hit['highlight']) ? ['highlight' => $hit['highlight']] : []);
+                        }, $aggsResponse[$key]['hits']['hits']);
                         break;
                     default:
                         // 太多了，头疼
@@ -1284,13 +1285,13 @@ abstract class Builder
     protected function runQuery()
     {
         $this->dsl('json');
-        if(empty($this->scroll)){
+        if (empty($this->scroll)) {
             $this->response = $this->query();
-        }else{
+        } else {
             $this->response = $this->scrollQuery();
         }
-        if(is_string($this->response)){
-            $this->response = json_decode($this->response,true);
+        if (is_string($this->response)) {
+            $this->response = json_decode($this->response, true);
         }
     }
 
