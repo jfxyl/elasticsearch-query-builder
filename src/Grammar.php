@@ -342,6 +342,9 @@ class Grammar
                     $term['nested'] = array_merge($term['nested'], $where['appendParams']);
                 }
                 break;
+            case 'raw':
+                $term = $where['where'];
+                break;
         }
         if (@$where['filter'] && $where['not']) {
             $term = ['bool' => ['must_not' => $term]];
