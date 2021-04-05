@@ -7,7 +7,7 @@ use Exception;
 
 abstract class Builder
 {
-    public $wheres = [];
+    public $wheres;
 
     public $postWheres;
 
@@ -25,6 +25,8 @@ abstract class Builder
 
     public $highlight;
 
+    public $raw;
+
     public $dsl;
 
     public $scroll;
@@ -32,6 +34,8 @@ abstract class Builder
     public $scrollId;
 
     public $minimumShouldMatch;
+
+    public $minScore;
 
     public $highlightConfig = [];
 
@@ -817,6 +821,16 @@ abstract class Builder
     }
 
     /**
+     * @param $value
+     * @return Builder
+     */
+    public function minScore($value): self
+    {
+        $this->minScore = $value;
+        return $this;
+    }
+
+    /**
      * @param string $scroll
      * @return $this
      */
@@ -989,7 +1003,6 @@ abstract class Builder
     }
 
     /**
-     * 聚合组内返回文档
      * @param array $appendParams
      * [
      *      'size' => 1,
@@ -999,8 +1012,20 @@ abstract class Builder
      * ]
      * @return $this
      */
-    public function topHits(array $params = []): self
+
+    /**
+     * @param $params
+     * @return $this
+     */
+    public function topHits($params): self
     {
+        if (!($params instanceof Closure) && !is_array($params)) {
+            throw new \InvalidArgumentException('非法参数');
+        }
+        if ($params instanceof Closure) {
+            call_user_func($params, $query = $this->newQuery());
+            $params = $query->dsl();
+        }
         return $this->aggs('top_hits', 'top_hits', $params);
     }
 
@@ -1062,7 +1087,7 @@ abstract class Builder
      */
     public function raw($dsl)
     {
-        $this->dsl = $dsl;
+        $this->raw = $dsl;
         return $this;
     }
 
@@ -1074,7 +1099,9 @@ abstract class Builder
      */
     public function dsl($type = 'array')
     {
-        if (empty($this->dsl)) {
+        if(!empty($this->raw)){
+            $this->dsl = $this->raw;
+        }else{
             $this->dsl = $this->grammar->compileComponents($this);
         }
         if (!is_string($this->dsl) && $type == 'json') {

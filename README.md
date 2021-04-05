@@ -406,11 +406,11 @@ composer require jfxy/elasticsearch-query-builder
     ->extendedStats('media_CI')
 ````
 
-* topHits方法是top_hits类型聚合的封装，只能在聚合内使用，获取每个分组内的记录
+* topHits方法是top_hits类型聚合的封装
 ```php
-    public function topHits(array $appendParams = []) :self
+    public function topHits($params) :self
     
-    $query->topHits([
+    ->topHits([
         'from' => 2,
         'size' => 1,
         'sort' => ['news_posttime' => ['order' => 'asc']],
@@ -424,21 +424,16 @@ composer require jfxy/elasticsearch-query-builder
                 'news_digest' => ['number_of_fragments' => 0]]
             ]
     ]);
-
-    $query->topHits()
-        ->from(2)
-        ->size(1)
-        ->orderBy('news_posttime','asc')
-        ->select('news_title','news_posttime','news_url','news_digest')
-        ->highlightConfig([
-            'require_field_match'=>true,
-            'pre_tags'=>'<h3>',
-            'post_tags'=>'</h3>'
-        ])
-        ->highlight('news_title')
-        ->highlight('news_digest',['number_of_fragments' => 0]);
     
+    ->topHits(function(Es $query){
+        $query->size(1)->from(2)
+            ->orderBy('news_posttime','asc')
+            ->select(['news_title','news_posttime','news_url','news_digest'])
+            ->highlight('news_title')
+            ->highlight('news_digest',['number_of_fragments' => 0]);
+    })
 ```
+
 * aggsFilter方法是filter类型聚合的封装，可在聚合内部进行条件过滤，$wheres参数仅支持数组和闭包，可参考where方法
 ```php
     public function aggsFilter($alias,$wheres,... $subGroups) :self
@@ -591,7 +586,7 @@ composer require jfxy/elasticsearch-query-builder
         $query->groupBy('platform_name',['size'=>30]);
     },function(Es $query){
         $query->groupBy('platform_domian_pri',['size'=>30],function(Es $query){
-            $query->topHits(['size'=>1])->highlight('news_title');
+            $query->topHits(['size'=>1]);
         });
     })
     ->dateGroupBy('news_posttime')
