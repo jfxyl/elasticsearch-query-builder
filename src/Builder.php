@@ -1057,7 +1057,7 @@ abstract class Builder
     protected function nestedQuery(Closure $callback, $boolean = 'and', $not = false, $filter = false): self
     {
         call_user_func($callback, $query = $this->newQuery());
-        if (count($query->wheres)) {
+        if (!empty($query->wheres)) {
             $type = 'nestedQuery';
             $this->wheres[] = compact('type', 'query', 'boolean', 'not', 'filter');
         }
