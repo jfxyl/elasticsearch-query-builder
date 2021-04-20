@@ -9,7 +9,7 @@ composer require jfxy/elasticsearch-query-builder
 ## 注意
 * elasticsearch <= 6.8
 * php >= 7.1
-* 需要子类继承**Jfxy\ElasticSearch\Builder**并实现**query()** 和 **scrollQuery()**
+* 需要子类继承**Jfxy\ElasticsearchQuery\Builder**并实现**query()** 和 **scrollQuery()**
 * 复杂的业务查询应该在子类中封装
 * 下面将子类定义为**Es**
 
