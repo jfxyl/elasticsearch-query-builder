@@ -1111,6 +1111,14 @@ abstract class Builder
     }
 
     /**
+     * @return mixed
+     */
+    public function response()
+    {
+        return $this->response;
+    }
+
+    /**
      * 返回文档总数、列表、聚合
      * @param bool $directReturn
      * @return array|null
