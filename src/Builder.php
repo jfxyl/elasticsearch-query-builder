@@ -1105,7 +1105,7 @@ abstract class Builder
             $this->dsl = $this->grammar->compileComponents($this);
         }
         if (!is_string($this->dsl) && $type == 'json') {
-            $this->dsl = json_encode($this->dsl, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            $this->dsl = json_encode($this->dsl, JSON_UNESCAPED_UNICODE);
         }
         return $this->dsl;
     }
