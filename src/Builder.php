@@ -57,7 +57,7 @@ abstract class Builder
 
     public function __construct()
     {
-        $this->grammar = new Grammar();
+        $this->grammar = Grammar::getInstance();
     }
 
     public static function init()
