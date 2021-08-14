@@ -6,9 +6,13 @@ class Grammar
 {
     static private $instance;
 
-    private function __construct(){}
+    private function __construct()
+    {
+    }
 
-    private function __clone(){}
+    private function __clone()
+    {
+    }
 
     static public function getInstance()
     {
@@ -40,8 +44,8 @@ class Grammar
     public function compileComponents($builder)
     {
         $dsl = [];
-        foreach($this->selectComponents as $k => $v){
-            if(!is_null($builder->$v)){
+        foreach ($this->selectComponents as $k => $v) {
+            if (!is_null($builder->$v)) {
                 $method = 'compile' . ucfirst($v);
                 $dsl[$k] = $this->$method($builder);
             }
@@ -209,13 +213,7 @@ class Grammar
 
     public function compileOrders($builder): array
     {
-        $orders = [];
-
-        foreach ($builder->orders as $field => $orderItem) {
-            $orders[$field] = is_array($orderItem) ? $orderItem : ['order' => $orderItem];
-        }
-
-        return $orders;
+        return $builder->orders;
     }
 
     public function compileSize($builder)

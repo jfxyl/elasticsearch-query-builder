@@ -715,9 +715,9 @@ abstract class Builder
     }
 
     /**
-     * @param  mixed $value
-     * @param  callable $callback
-     * @param  callable|null $default
+     * @param mixed $value
+     * @param callable $callback
+     * @param callable|null $default
      * @return mixed|$this
      */
     public function when($value, $callback, $default = null): self
@@ -766,13 +766,15 @@ abstract class Builder
     }
 
     /**
-     * @param string $field
+     * @param $field
      * @param string $sort
      * @return $this
      */
-    public function orderBy(string $field, $sort = 'asc'): self
+    public function orderBy($field, $sort = 'asc'): self
     {
-        $this->orders[$field] = $sort;
+        $this->orders[] = is_array($field) ? $field : [
+            $field => ['order' => $sort]
+        ];
         return $this;
     }
 
@@ -860,7 +862,7 @@ abstract class Builder
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function aggs(string $alias, string $type = 'terms', $params = [], ... $subGroups): self
+    public function aggs(string $alias, string $type = 'terms', $params = [], ...$subGroups): self
     {
         $aggs = [
             'type' => $type,
@@ -890,7 +892,7 @@ abstract class Builder
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function groupBy(string $field, array $appendParams = [], ... $subGroups): self
+    public function groupBy(string $field, array $appendParams = [], ...$subGroups): self
     {
         $alias = $field . '_terms';
         $params = array_merge(['field' => $field], $appendParams);
@@ -906,7 +908,7 @@ abstract class Builder
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function dateGroupBy(string $field, string $interval = 'day', string $format = "yyyy-MM-dd", array $appendParams = [], ... $subGroups): self
+    public function dateGroupBy(string $field, string $interval = 'day', string $format = "yyyy-MM-dd", array $appendParams = [], ...$subGroups): self
     {
         $alias = $field . '_date_histogram';
         $params = array_merge([
@@ -1036,7 +1038,7 @@ abstract class Builder
      * @param mixed ...$subGroups
      * @return $this
      */
-    public function aggsFilter(string $alias, $wheres, ... $subGroups): self
+    public function aggsFilter(string $alias, $wheres, ...$subGroups): self
     {
         return $this->aggs($alias, 'filter', $this->newQuery()->where($wheres), ... $subGroups);
     }
@@ -1099,9 +1101,9 @@ abstract class Builder
      */
     public function dsl($type = 'array')
     {
-        if(!empty($this->raw)){
+        if (!empty($this->raw)) {
             $this->dsl = $this->raw;
-        }else{
+        } else {
             $this->dsl = $this->grammar->compileComponents($this);
         }
         if (!is_string($this->dsl) && $type == 'json') {
