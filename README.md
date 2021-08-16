@@ -327,10 +327,8 @@ composer require jfxy/elasticsearch-query-builder
             ['key'=>'1000-∞','from'=>'1000'],
         ]
     ])
-    ->aggs('alias','top_hits',$params)
-    ->aggs('alias','filter',function(Es $query){
-        $query->where('news_posttime','>','2020-09-01 00:00:00');
-    })
+    ->aggs('alias','top_hits',['size'=>1])
+    ->aggs('alias','filter',['term' => ['platform' => 'web']])
 ```
 
 * groupBy方法是aggs的terms类型聚合的封装  
